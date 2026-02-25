@@ -1,66 +1,66 @@
-# General Informations
+# TDZ House
+# <span style="color:rgb(0, 112, 192)">Configuration</span>
+## <span style="color:rgb(255, 192, 0)">Git</span>
+Les variables d'environnement se trouvent dans un fichier .env à la racine du projet. Il faut utiliser les 
+fonctionnalités de PyCharm pour lancer Terraform avec les bonnes variables d'environnement.
+## <span style="color:rgb(255, 192, 0)">Inventaire</span>
+### <span style="color:rgb(115, 115, 115)">DMZ</span>
+- Pare-feu de bordure - **PFSense** - `dmz-fw`
+- Reverse proxy web - **Nginx** - `dmz-rp`
+- Proxy web - **Tiny proxy** - `dmz-proxy`
+- Terminaison VPN - **Wireguard** - `dmz-vpn`
+### <span style="color:rgb(115, 115, 115)">Intranet</span>
+- Pare-feu interne - **Fortigate** - `lan-fg`
+- **Home assistant** - `lan-ha`
+- Administration conteneurs - **Portainer** - `lan-k3s-x`
+- Ingress controller - **Traefik** - `lan-k3s-x`
+- Web recettes - **NodeJS** - `lan-k3s-x`
+- **Actual budget** - `lan-k3s-x`
+- **ESPHome** - `lan-k3s-x`
+- PDF tools - **Stirling PDF** - `lan-k3s-x`
+## <span style="color:rgb(255, 192, 0)">Matrice de flux</span>
 
-## The project
-Homeserver is an automation script to convert a machine in a self-hosted proxmox server with CI/CD pipe to allow easy and fast deployement for a home lab.
+| src\dst         | 0                               | 1                               | 2         | 3                    | 4           | 5                     | 6         | 7                    |
+|-----------------| ------------------------------- | ------------------------------- | --------- | -------------------- | ----------- | --------------------- | --------- | -------------------- |
+| 0 - `bbox`      |                                 | 51820 (UDP) - 443 (TCP)         |           |                      |             |                       |           |                      |
+| 1 - `dmz-fw`    | 53 (UDP) - 80 (TCP) - 443 (TCP) |                                 | 443 (TCP) |                      | 51820 (UDP) |                       |           |                      |
+| 2 - `dmz-rp`    | 80 (TCP) - 443 (TCP)            | 53 (UDP) - 443 (TCP)            |           | 80 (TCP) - 443 (TCP) |             | Forwarded Ports (TCP) |           |                      |
+| 3 - `dmz-proxy` |                                 | 53 (UDP) - 80 (TCP) - 443 (TCP) |           |                      |             |                       |           |                      |
+| 4 - `dmz-vpn`   |                                 | 53 (UDP)                        |           | 80 (TCP) - 443 (TCP) |             |                       |           |                      |
+| 5 - `lan-fg`    |                                 | 53 (UDP)                        |           | 80 (TCP) - 443 (TCP) |             |                       | 443 (TCP) | 80 (TCP) - 443 (TCP) |
+| 6 - `lan-ha`    |                                 |                                 |           | 80 (TCP) - 443 (TCP) |             | 53 (UDP)              |           |                      |
+| 7 - `lan-k3s-x` |                                 |                                 |           | 80 (TCP) - 443 (TCP) |             | 53 (UDP)              |           |                      |
+| 8 - `xiaomi`    |                                 | 22 (TCP)                        | 22 (TCP)  | 22 (TCP)             | 22 (TCP)    | 22 (TCP)              | 22 (TCP)  | 22 (TCP)             |
+## <span style="color:rgb(255, 192, 0)">Réseaux</span>
 
-## Preparation
-On your server, install debian, preferablly without gui. Do the partitionning depending on your drives. Here is some guidelines for it :
-- Use a 20G partition for the OS
-- Consider using most of your NVMe as swap, if so you don't need to RAID it
-- Use NVMe or SSD for a "tmp" partition, still without RAID, that would be used for SSD caching, or for filesystems that do not need backup since it can juste be installed back again
-- remaining SSD and NVME can be used with RAID 3 or RAID 5, using HDD as parity if possible. Use that as hot storage.
-- For HDD, use them as cold storage with RAID 1, 3 or 5.
-- You may also use part of HDD for temp storage with no RAID if you don't care about a slow system, and prefer using SSD for increasing swap capacities.
-
-## Installation
-
-### Main installation
-```
-bash -c "$(curl -L -s https://raw.githubusercontent.com/lLouu/homeserver/main/install.sh)"
-```
-### Dev installation
-```
-bash -c "$(curl -L -s https://raw.githubusercontent.com/lLouu/homeserver/main/install.sh)" -- -b dev
-```
-### No-curl installation
-```
-wget https://raw.githubusercontent.com/lLouu/homeserver/main/install.sh
-chmod +x install.sh
-./install.sh
-```
-
-# Features
-## Proxmox installation
-Automation of proxmox VE installation from a debian.
-
-## Data management
-You'll need to make your partitionning and RAID management before the script is launched. However, the script manage mounting, and use mergerfs to facilitte multi-drives management. You can categorise your partition as followed :
-- `vram` will be fully used for swap files, mounted in `/mnt/vram`, thought for NVMe without RAID
-- `hot` will be hot storage, mounted in `/mnt/hot`, thought to be SSD with RAID
-- `cold` will be cold storage, mounted in `/mnt/cold`, thought to be HDD with RAID
-- `temp_hot` (or `thot`) will be hot temp storage, mounted in `/mnt/temp_hot`, thought to be SSD without RAID
-- `temp_cold` (or `tcold`) will be cold temp storage, mounted in `/mnt/temp_cold`, thought to be HDD without RAID
-
-Every 3 days, a check of last used is done to move files between hot and cold storages.<br>
-Also, hot and cold are merged in `/mnt/storage`, while temp_hot and temp_cold are merged in `/mnt/temp`
-
-## vGPU unlock
-> Shoutout to https://github.com/DualCoder/vgpu_unlock
-
-NVIDIA driver is setted up and compiled such as vGPU are unlocked and available for proxmox
-
-## CICD agent
-CICD is enabled, allowing to modify allongisde the git repo the structure and configuration of the homeserver.
-### Terraform & Packer
-Packer creates ansible-ready templates for the different iso, letting it with an ansible user that can connect by ssh only with certificate. The network configuration for them is a single bridge. It is also responsible of initial configuration of the Pfsense.<br>
-Terraform then uses these modeles to deploy the architecture of the homeserver.
-### Ansible
-Ansible is responsible for software configuration. Once a server is up and running, it connects to it, installs the software, and once installed limits its rights to be able only to manage the configurations.
-### Initial deployment
-Before Jenkins gets deployed, the host proxmox node takes the role of the CICD agent, deploying the initial configuration of the pfsense + the jenkins agent. It forward then the ansible private key to jenkins before destroying CICD related stuff. Starting there, Jenkins takes the hand to deploy the dynamic architcture
-
-## ISO library
-- alpine-virt-3.21.2-aarch64.iso
-- debian-12.9.0-amd64-netinst.iso
-- ubuntu-24.04.1-live-server-amd64.iso
-- pfSense-CE-2.7.2-RELEASE-amd64.iso
+### <span style="color:rgb(115, 115, 115)">DMZ</span>
+- DMZ web - 10.0.1.0 / 24
+	- `dmz-fw` - static 10.0.1.1
+	- `dmz-rp` - static 10.0.1.50 
+	- `lan-fg` - static 10.0.1.49
+- DMZ out - 10.0.2.0 / 24
+	- `dmz-fw` - static 10.0.2.1
+	- `dmz-proxy` - static 10.0.2.50
+	- `lan-fg` - static 10.0.2.49
+- DMZ out - 10.0.3.0 / 24
+	- `dmz-fw` - static 10.0.3.1
+	- `dmz-vpn` - static 10.0.3.50
+### <span style="color:rgb(115, 115, 115)">Intranet</span>
+- LAN web - 10.1.1.0 / 24
+	- `lan-fg` - static 10.1.1.1
+	- `lan-k3s-0` - static 10.1.1.50
+	- `lan-k3s-1` - static 10.1.1.51
+	- `lan-k3s-2` - static 10.1.1.52
+- LAN ha - 10.1.2.0 / 24
+	- `lan-fg` - static 10.1.2.1
+	- `lan-ha` - static 10.1.2.50
+### <span style="color:rgb(115, 115, 115)">VPN</span>
+- VPN satisfactory - 10.2.1.0/24
+	- `dmz-vpn` - static 10.2.1.1
+	- `PC-MP` - static 10.2.1.50
+# <span style="color:rgb(0, 112, 192)">Scripts</span>
+## <span style="color:rgb(255, 192, 0)">VPN</span>
+- Le script vérifie toutes les minutes les lasts handshake de chaque peer. Si le dernier handshake date d'il y a 
+plus de 180s il est considéré comme déconnecté. À la connexion ou la déconnexion, le script envoi un signal au home
+assistant.
+- Pour executer le script toutes les minutes on enregistre le bash dans un crontab. 

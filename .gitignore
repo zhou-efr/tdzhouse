@@ -1,3 +1,5 @@
 .env
 .idea
-terraform/secrets.tfvars.json
+terraform/variables/secrets.tfvars.json
+terraform/.terraform
+terraform/.terraform.lock.hcl

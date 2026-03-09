@@ -1,0 +1,28 @@
+networks:
+  web:
+    external: true
+
+services:
+  traefik:
+    container_name: traefik
+    image: traefik:latest
+    restart: always
+    networks:
+      - web
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /opt/containers/traefik/logs:/logs
+      - /opt/containers/traefik/traefik.yml:/traefik.yml
+      - /opt/containers/traefik/dynamic.yml:/dynamic.yml
+      - /opt/containers/traefik/letsencrypt/acme.json:/acme.json
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traefik-dashboard.rule=Host(`traefik.tdz.ovh`)
+      - traefik.http.routers.traefik-dashboard.entrypoints=websecure
+      - traefik.http.routers.traefik-dashboard.tls.options=secure@file
+      - traefik.http.routers.traefik-dashboard.service=api@internal
+      - traefik.http.routers.traefik-dashboard.middlewares=secureHeaders@file,auth
+      - traefik.http.middlewares.auth.basicauth.users=<user>:<hash>.

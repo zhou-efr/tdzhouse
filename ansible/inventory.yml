@@ -1,0 +1,40 @@
+---
+all:
+  vars:
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=accept-new'
+
+  children:
+    debian:
+      hosts:
+        dmz-reverse-proxy:
+          ansible_host: 10.0.1.50
+        dmz-proxy:
+          ansible_host: 10.0.2.50
+        proxmox:
+          ansible_host: 192.168.1.102
+
+      children:
+        lan_k3s:
+          hosts:
+            lan-k3s-load-balancer:
+              ansible_host: 10.1.1.49
+
+          children:
+            lan_k3s_servers:
+              hosts:
+                lan-k3s-server-01:
+                  ansible_host: 10.1.1.50
+
+            lan_k3s_nodes:
+              hosts:
+                lan-k3s-01:
+                  ansible_host: 10.1.1.60
+                lan-k3s-02:
+                  ansible_host: 10.1.1.61
+
+    firewall:
+      hosts:
+        dmz-firewall:
+          ansible_host: 10.1.1.1
+        lan-firewall:
+          ansible_host: 10.0.1.1

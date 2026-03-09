@@ -142,3 +142,32 @@
         nohup /usr/local/bin/tinyproxy -d -c {{ tinyproxy_conf_file }} >/var/log/tinyproxy/startup.log 2>&1 &
       args:
         creates: /var/log/tinyproxy/startup.log
+
+- name: Setup k3s load balancer
+  hosts: all
+  become: true
+  tasks:
+    - name: Proxy setup
+      ansible.builtin.include_tasks: tasks/proxy_setup.yml
+
+    - name: Quick Debian setup
+      ansible.builtin.include_tasks: tasks/quick_debian.yml
+
+    - name: Installer nginx
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+        update_cache: true
+
+    - name: Déployer nginx.conf
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/zhou-efr/tdzhouse/master/ansible/config/nginx/nginx.conf
+        dest: /etc/nginx/nginx.conf
+        mode: "0644"
+      notify: Restart nginx
+
+  handlers:
+    - name: Restart nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted

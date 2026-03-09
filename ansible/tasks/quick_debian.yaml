@@ -1,0 +1,70 @@
+---
+- name: Quick Debian
+  hosts: debian
+  vars:
+    target_user: zhou
+    target_home: "/home/{{ target_user }}"
+    zsh_custom: "{{ target_home }}/.oh-my-zsh/custom"
+
+  tasks:
+    - name: Update apt cache and upgrade packages
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: dist
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - git
+          - zsh
+          - curl
+          - sudo
+        state: present
+
+    - name: Install oh my zsh
+      shell: sh -c "$(wget https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O -)"
+      failed_when: false
+      register: script_output
+
+    - name: Remove existing .zshrc
+      ansible.builtin.file:
+        path: "{{ target_home }}/.zshrc"
+        state: absent
+
+    - name: Download custom .zshrc
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/zhou-efr/PimpMyParrot/refs/heads/main/.zshrc
+        dest: "{{ target_home }}/.zshrc"
+        mode: "0644"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+
+    - name: Install zsh-autosuggestions plugin
+      ansible.builtin.git:
+        repo: https://github.com/zsh-users/zsh-autosuggestions.git
+        dest: "{{ zsh_custom }}/plugins/zsh-autosuggestions"
+        version: master
+      become: true
+      become_user: "{{ target_user }}"
+
+    - name: Create GTK config directory
+      ansible.builtin.file:
+        path: "{{ target_home }}/.config/gtk-3.0"
+        state: directory
+        mode: "0755"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+
+    - name: Download gtk.css
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/zhou-efr/PimpMyParrot/main/gtk.css
+        dest: "{{ target_home }}/.config/gtk-3.0/gtk.css"
+        mode: "0644"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+
+    - name: Set default shell to zsh
+      ansible.builtin.user:
+        name: "{{ target_user }}"
+        shell: /usr/bin/zsh

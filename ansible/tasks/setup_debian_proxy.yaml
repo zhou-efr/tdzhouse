@@ -1,0 +1,32 @@
+---
+- name: Setup proxy for Debian
+  hosts: debian
+  become: true
+  vars:
+    proxy_url: "http://proxy.out.tdz.ovh:8080/"
+    no_proxy_list: "localhost,127.0.0.1"
+
+  tasks:
+    - name: Configure persistent proxy settings in /etc/environment
+      ansible.builtin.blockinfile:
+        path: /etc/environment
+        create: true
+        marker: "# {mark} ANSIBLE MANAGED PROXY SETTINGS"
+        block: |
+          http_proxy={{ proxy_url }}
+          https_proxy={{ proxy_url }}
+          ftp_proxy={{ proxy_url }}
+          no_proxy={{ no_proxy_list }}
+
+    - name: Configure apt proxy
+      ansible.builtin.copy:
+        dest: /etc/apt/apt.conf.d/95proxies
+        mode: "0644"
+        content: |
+          Acquire::http::Proxy "{{ proxy_url }}";
+          Acquire::https::Proxy "{{ proxy_url }}";
+
+    - name: Reboot machine to apply changes
+      ansible.builtin.reboot:
+        reboot_timeout: 60 # peut-être à adapter en fonction du temps de redémarrage des lxc
+        test_command: whoami

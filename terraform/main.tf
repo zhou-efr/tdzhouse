@@ -1,4 +1,6 @@
 terraform {
+  required_version = ">= 0.13.0"
+
   required_providers {
     proxmox = {
       source = "telmate/proxmox"
@@ -31,14 +33,17 @@ resource "proxmox_lxc" "lxc_instances" {
   ssh_public_keys = var.proxmox.authorized_keys
 
   rootfs {
-    size    = var.lxc[count.index].root_disk.size
-    storage = var.lxc[count.index].root_disk.storage
+    size     = var.lxc[count.index].root_disk[0].size
+    storage  = var.lxc[count.index].root_disk[0].storage
   }
 
-  network {
-    name   = "eth0"
-    bridge = var.lxc[count.index].bridge
-    ip     = var.lxc[count.index].ipv4
-    ip6    = "dhcp"
+  dynamic "network" {
+    for_each = var.lxc[count.index].network
+    content {
+      name   = network.value.name
+      bridge = network.value.bridge
+      ip     = network.value.ipv4
+      ip6    = "dhcp"
+    }
   }
 }

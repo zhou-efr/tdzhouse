@@ -3,3 +3,4 @@
 terraform/variables/secrets.tfvars.json
 terraform/.terraform
 terraform/.terraform.lock.hcl
+packer/template-credentials.pkr.hcl

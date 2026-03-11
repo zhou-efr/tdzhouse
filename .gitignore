@@ -1,4 +1,5 @@
-.env
+.env.fortinet
+.env.local
 .idea
 terraform/variables/secrets.tfvars.json
 terraform/.terraform

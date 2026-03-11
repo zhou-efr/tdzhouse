@@ -1,0 +1,56 @@
+# /var/lib/vz/template/iso/
+- name: Load iso to proxmox
+  hosts: proxmox
+  gather_facts: false
+  vars:
+    proxmox_host: "{{ lookup('env', 'PROXMOX_HOST') }}"
+    proxmox_user: "{{ lookup('env', 'PROXMOX_USER') }}"
+    proxmox_token_id: "{{ lookup('env', 'PROXMOX_TOKEN_ID') }}"
+    proxmox_token_secret: "{{ lookup('env', 'PROXMOX_TOKEN_SECRET') }}"
+    proxmox_node: "{{ lookup('env', 'PROXMOX_NODE') }}"
+    iso_url: "{{ lookup('env', 'ISO_URL') }}"
+    local_iso_dir: "/tmp"
+    iso_filename: "{{ lookup('env', 'ISO_NAME') }}"
+    iso_compressed: "{{ lookup('env', 'ISO_COMPRESSED_NAME') }}"
+    proxmox_storage: "local"
+    content_type: "{{ lookup('env', 'CONTENT_TYPE') }}"
+    template_name: "{{ lookup('env', 'TEMPLATE_NAME') }}"
+
+  tasks:
+    - name: Download compressed archive
+      ansible.builtin.get_url:
+        url: "{{ iso_url }}"
+        dest: "{{ local_iso_dir }}/{{ iso_compressed }}"
+
+    - name: Unarchive iso
+      ansible.builtin.unarchive:
+        src: "{{ local_iso_dir }}/{{ iso_compressed }}"
+        dest: "{{ local_iso_dir }}/"
+        remote_src: no
+        creates: "{{ local_iso_dir }}/{{ iso_filename }}"  
+
+    - name: Load iso to proxmox
+      community.proxmox.proxmox_template:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_token_id: "{{ proxmox_token_id }}"
+        api_token_secret: "{{ proxmox_token_secret }}"
+        node: "{{ proxmox_node }}"                
+        storage: "{{ proxmox_storage }}"
+        content_type: "{{ content_type }}"
+        template: "{{ template_name }}"
+        src: "{{ local_iso_dir }}/{{ iso_filename }}"
+        force: true                
+        state: present
+
+    - name: Purge local copy of iso
+      ansible.builtin.file:
+        path: "{{ local_iso_dir }}/{{ item }}"
+        state: absent
+      loop:
+        - "{{ iso_compressed }}"
+        - "{{ iso_filename }}"
+
+    - name: Completion notification
+      debug:
+        msg: "L'ISO {{ iso_filename }} a été téléchargé et décompressé avec succès sur Proxmox."

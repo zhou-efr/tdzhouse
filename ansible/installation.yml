@@ -253,3 +253,51 @@
         name: k3s
         state: started
         enabled: true
+
+- name: Setup proxmox pre-terraform
+  hosts: proxmox
+  become: true
+  vars:
+    proxmox_host: "{{ lookup('env', 'PROXMOX_HOST') }}"
+    proxmox_user: "{{ lookup('env', 'PROXMOX_USER') }}"
+    proxmox_token_id: "{{ lookup('env', 'PROXMOX_TOKEN_ID') }}"
+    proxmox_token_secret: "{{ lookup('env', 'PROXMOX_TOKEN_SECRET') }}"
+
+  tasks:
+    - name: Load OPNsense
+      include_tasks: tasks/load_iso_proxmox.yml
+      environment:
+        ISO_URL: "https://pkg.opnsense.org/releases/26.1.2/OPNsense-26.1.2-dvd-amd64.iso.bz2"
+        ISO_COMPRESSED_NAME: "OPNsense-26.1.2-dvd-amd64.iso.bz2"
+        ISO_NAME: "OPNsense-26.1.2-dvd-amd64.iso"
+        CONTENT_TYPE: "iso"
+        TEMPLATE_NAME: "OPNsense-26.1.2-dvd-amd64"
+
+    - name: Load fortigate
+      include_tasks: tasks/load_iso_proxmox.yml
+      environment:
+        ISO_URL: "file://FGT_VM64_ALI-v7.6.6.M-build3652-FORTINET.out.kvm.zip"
+        ISO_COMPRESSED_NAME: "FGT_VM64_ALI-v7.6.6.M-build3652-FORTINET.out.kvm.zip"
+        ISO_NAME: "fortios.qcow2"
+        CONTENT_TYPE: "import"
+        TEMPLATE_NAME: "fortios-4.6.6"
+
+    - name: Setup bridges and vlans
+      include_tasks: tasks/setup_proxmox_networks.yml
+
+    - name: Create dmz pool
+      community.proxmox.proxmox_pool:
+        api_host: node1
+        api_user: root@pam
+        api_password: password
+        poolid: dmz
+        comment: 'Machines de DMZ'
+
+    - name: Create  lan pool
+      community.proxmox.proxmox_pool:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_token_id: "{{ proxmox_token_id }}"
+        api_token_secret: "{{ proxmox_token_secret }}"
+        poolid: lan
+        comment: 'Machines internes'

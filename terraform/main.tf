@@ -47,3 +47,47 @@ resource "proxmox_lxc" "lxc_instances" {
     }
   }
 }
+
+resource "proxmox_vm_qemu" "instances" {
+  count = length(var.vms)
+
+  # General
+  target_node = var.proxmox.node
+  name        = var.vms[count.index].name
+  vmid        = var.vms[count.index].id
+  clone       = var.vms[count.index].os
+
+  # Ressources
+  memory      = var.vms[count.index].ram
+  sockets     = var.vms[count.index].sockets
+  cores       = var.vms[count.index].cores
+
+  # Behaviour
+  boot        = "order=scsi0"
+  scsihw      = "virtio-scsi-pci"
+  agent       = 1
+  onboot      = true
+  vm_state    = "running"
+
+  # Storage
+  dynamic "disk" {
+    for_each = var.vms[count.index].disks
+
+    content {
+      type       = "disk"
+      size       = disk.value.size
+      storage    = disk.value.storage
+      slot       = disk.value.slot
+    }
+  }
+  
+  dynamic "network" {
+    for_each = var.vms[count.index].network
+    content {
+      id     = network.value.name
+      bridge = network.value.bridge
+      model  = "virtio"
+      firewall = true
+    }
+  }
+}

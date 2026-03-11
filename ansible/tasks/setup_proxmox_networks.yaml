@@ -1,0 +1,102 @@
+- name: Configure Proxmox networks
+  hosts: proxmox
+  gather_facts: false
+  vars:
+    proxmox_host: "{{ lookup('env', 'PROXMOX_HOST') }}"
+    proxmox_user: "{{ lookup('env', 'PROXMOX_USER') }}"
+    proxmox_token_id: "{{ lookup('env', 'PROXMOX_TOKEN_ID') }}"
+    proxmox_token_secret: "{{ lookup('env', 'PROXMOX_TOKEN_SECRET') }}"
+
+  tasks:
+    - name: Create a Linux bridge dmz
+      community.proxmox.proxmox_node_network:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_token_id: "{{ proxmox_token_id }}"
+        api_token_secret: "{{ proxmox_token_secret }}"
+        node: "{{ inventory_hostname }}"
+        iface: "dmz"
+        type: "bridge"
+        autostart: true
+        cidr: "10.0.0.0/24"
+        state: present
+        bridge_vlan_aware: "true"
+
+    - name: Create a Linux bridge lan
+      community.proxmox.proxmox_node_network:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_token_id: "{{ proxmox_token_id }}"
+        api_token_secret: "{{ proxmox_token_secret }}"
+        node: "{{ inventory_hostname }}"
+        iface: "lan"
+        type: "bridge"
+        autostart: true
+        cidr: "10.1.0.0/24"
+        state: present
+        bridge_vlan_aware: "true"
+
+    - name: Create VLAN interface dmz in
+      community.proxmox.proxmox_node_network:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_token_id: "{{ proxmox_token_id }}"
+        api_token_secret: "{{ proxmox_token_secret }}"
+        node: "{{ inventory_hostname }}"
+        iface: "dmz.10"
+        type: "vlan"
+        vlan_id: 100
+        autostart: true
+        cidr: "10.0.1.0/24"
+        state: present
+
+    - name: Create VLAN interface dmz out
+      community.proxmox.proxmox_node_network:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_token_id: "{{ proxmox_token_id }}"
+        api_token_secret: "{{ proxmox_token_secret }}"
+        node: "{{ inventory_hostname }}"
+        iface: "dmz.20"
+        type: "vlan"
+        vlan_id: 100
+        autostart: true
+        cidr: "10.0.2.0/24"
+        state: present
+
+    - name: Create VLAN interface lan web
+      community.proxmox.proxmox_node_network:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_token_id: "{{ proxmox_token_id }}"
+        api_token_secret: "{{ proxmox_token_secret }}"
+        node: "{{ inventory_hostname }}"
+        iface: "lan.10"
+        type: "vlan"
+        vlan_id: 100
+        autostart: true
+        cidr: "10.1.1.0/24"
+        state: present
+
+    - name: Create VLAN interface lan home assistant
+      community.proxmox.proxmox_node_network:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_token_id: "{{ proxmox_token_id }}"
+        api_token_secret: "{{ proxmox_token_secret }}"
+        node: "{{ inventory_hostname }}"
+        iface: "lan.20"
+        type: "vlan"
+        vlan_id: 100
+        autostart: true
+        cidr: "10.1.2.0/24"
+        state: present
+
+    - name: Apply network changes
+      community.proxmox.proxmox_node_network:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_token_id: "{{ proxmox_token_id }}"
+        api_token_secret: "{{ proxmox_token_secret }}"
+        node: "{{ inventory_hostname }}"
+        state: apply

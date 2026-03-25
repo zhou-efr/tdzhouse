@@ -11,7 +11,7 @@ all:
         dmz-proxy:
           ansible_host: 10.0.2.50
         proxmox:
-          ansible_host: 192.168.1.102
+          ansible_host: 152.228.227.39
 
       children:
         lan_k3s:

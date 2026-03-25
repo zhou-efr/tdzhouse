@@ -1,0 +1,39 @@
+---
+- name: Setup k3s node
+  hosts: lan_k3s_nodes
+  become: true
+  vars:
+    proxy_url: "http://proxy.out.tdz.ovh:8080/"
+    no_proxy_list: "localhost,127.0.0.1"
+    target_user: zhou
+    target_home: "/home/{{ target_user }}"
+    zsh_custom: "{{ target_home }}/.oh-my-zsh/custom"
+    k3s_tls_san: "10.1.1.49"
+
+  tasks:
+    - name: Proxy
+      include_tasks: tasks/proxy.yml
+
+    - name: Base Debian
+      include_tasks: tasks/quick_debian.yml
+
+    - name: Download k3s installer
+      ansible.builtin.get_url:
+        url: https://get.k3s.io
+        dest: /tmp/get_k3s.sh
+        mode: "0755"
+
+    - name: Install k3s server with cluster-init and tls-san
+      ansible.builtin.command:
+        cmd: /bin/sh /tmp/get_k3s.sh
+      environment:
+        K3S_TOKEN: "{{ lookup('ansible.builtin.env', 'K3S_TOKEN') }}"
+        K3S_URL: "{{ lookup('ansible.builtin.env', 'K3S_URL') }}"
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Ensure k3s service is started and enabled
+      ansible.builtin.service:
+        name: k3s
+        state: started
+        enabled: true

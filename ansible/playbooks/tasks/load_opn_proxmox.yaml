@@ -1,0 +1,45 @@
+# /var/lib/vz/template/iso/
+
+- name: Install required packages
+  ansible.builtin.apt:
+    name:
+      - bzip2
+      - python3-pip
+    state: present
+
+- name: Install proxmoxer using pip
+  ansible.builtin.pip:
+    name: proxmoxer
+    state: present
+    extra_args: "--break-system-packages"
+
+- name: Download opnsense compressed archive
+  ansible.builtin.get_url:
+    url: "https://pkg.opnsense.org/releases/26.1.2/OPNsense-26.1.2-dvd-amd64.iso.bz2"
+    dest: "/tmp/OPNsense-26.1.2-dvd-amd64.iso.bz2"
+
+- name: Remove potential remaining ISO file
+  ansible.builtin.file:
+    path: "/tmp/OPNsense-26.1.2-dvd-amd64.iso"
+    state: absent
+
+- name: Decompress the opnsense.iso.bz2 file
+  command: "bunzip2 -k /tmp/OPNsense-26.1.2-dvd-amd64.iso.bz2"
+
+- name: Move opnsense to local
+  ansible.builtin.copy:
+    src: "/tmp/OPNsense-26.1.2-dvd-amd64.iso"
+    dest: "/var/lib/vz/template/iso/"
+    remote_src: yes
+
+- name: Purge local copy of archive
+  ansible.builtin.file:
+    path: "/tmp/{{ item }}"
+    state: absent
+  loop:
+    - "OPNsense-26.1.2-dvd-amd64.iso.bz2"
+    - "OPNsense-26.1.2-dvd-amd64.iso"
+
+- name: Completion notification
+  debug:
+    msg: "L'ISO OPNsense-26.1.2-dvd-amd64 a été téléchargé et décompressé avec succès sur Proxmox."

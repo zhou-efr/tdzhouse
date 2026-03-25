@@ -1,7 +1,10 @@
 .env.fortinet
 .env.local
+.env
 .idea
 terraform/variables/secrets.tfvars.json
 terraform/.terraform
 terraform/.terraform.lock.hcl
 packer/template-credentials.pkr.hcl
+ansible/playbooks/tasks/files/FGT_VM64_KVM-v7.6.6.M-build3652-FORTINET.out.kvm.zip
+fortios.qcow2

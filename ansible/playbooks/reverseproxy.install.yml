@@ -1,0 +1,57 @@
+---
+- name: Setup reverse-proxy
+  hosts: dmz-reverse-proxy
+  become: true
+  vars:
+    target_user: zhou
+    target_home: "/home/{{ target_user }}"
+
+  tasks:
+    - name: Proxy
+      include_tasks: tasks/proxy.yml
+
+    - name: Base Debian
+      include_tasks: tasks/quick_debian.yml
+
+    - name: Docker
+      include_tasks: tasks/docker.yml
+
+    - name: Create traefik directories
+      ansible.builtin.file:
+        path: "/opt/containers/traefik/letsencrypt"
+        state: directory
+        mode: "0755"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+
+    - name: Download custom compose.yml
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/zhou-efr/tdzhouse/master/ansible/config/traefik/compose.yml
+        dest: "/opt/containers/traefik/compose.yml"
+        mode: "0644"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+
+    - name: Download custom dynamic.yml
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/zhou-efr/tdzhouse/master/ansible/config/traefik/dynamic.yml
+        dest: "/opt/containers/traefik/dynamic.yml"
+        mode: "0644"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+
+    - name: Download custom traefik.yml
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/zhou-efr/tdzhouse/master/ansible/config/traefik/traefik.yml
+        dest: "/opt/containers/traefik/traefik.yml"
+        mode: "0644"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+
+    - name: Deploy traefik stack
+      become: true
+      community.docker.docker_compose_v2:
+        project_src: /opt/containers/traefik
+        files:
+          - compose.yml
+        state: present

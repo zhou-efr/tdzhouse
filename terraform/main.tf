@@ -27,7 +27,6 @@ resource "proxmox_lxc" "lxc_instances" {
   memory = var.lxc[count.index].ram
   pool = var.lxc[count.index].pool
   nameserver = "1.1.1.1"
-  onboot = true
   unprivileged = true
 
   ssh_public_keys = var.proxmox.authorized_keys
@@ -55,7 +54,7 @@ resource "proxmox_vm_qemu" "instances" {
   target_node = var.proxmox.node
   name        = var.vms[count.index].name
   vmid        = var.vms[count.index].id
-  clone       = var.vms[count.index].os
+  # clone       = var.vms[count.index].os
 
   # Ressources
   memory      = var.vms[count.index].ram
@@ -66,8 +65,7 @@ resource "proxmox_vm_qemu" "instances" {
   boot        = "order=scsi0"
   scsihw      = "virtio-scsi-pci"
   agent       = 1
-  onboot      = true
-  vm_state    = "running"
+  start_at_node_boot      = true
 
   # Storage
   dynamic "disk" {
@@ -84,7 +82,7 @@ resource "proxmox_vm_qemu" "instances" {
   dynamic "network" {
     for_each = var.vms[count.index].network
     content {
-      id     = network.value.name
+      id     = network.value.id
       bridge = network.value.bridge
       model  = "virtio"
       firewall = true

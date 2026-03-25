@@ -1,7 +1,14 @@
 # TDZ House
 # <span style="color:rgb(0, 112, 192)">Usage</span>
+## <span style="color:rgb(255, 192, 0)">Ansible</span>
+```
+export $(cat .env | tr -d '\r' | xargs)
+ansible-playbook ansible/playbooks/proxmoxinitialsetup.install.yml -i ansible/inventory.yml --user=root
+```
 ## <span style="color:rgb(255, 192, 0)">Terraform</span>
-`terraform plan --var-file=.\instances.tfvars.json --var-file=.\secrets.tfvars.json -out plan`
+```
+terraform plan --var-file=.\instances.tfvars.json --var-file=.\secrets.tfvars.json -out plan
+```
 # <span style="color:rgb(0, 112, 192)">Configuration</span>
 ## <span style="color:rgb(255, 192, 0)">Git</span>
 Les variables d'environnement se trouvent dans un fichier .env à la racine du projet. Il faut utiliser les 

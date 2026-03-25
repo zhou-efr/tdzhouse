@@ -1,0 +1,29 @@
+---
+- name: Setup k3s load balancer
+  hosts: lan-k3s-load-balancer
+  become: true
+  tasks:
+    - name: Proxy
+      include_tasks: tasks/proxy.yml
+
+    - name: Base Debian
+      include_tasks: tasks/quick_debian.yml
+
+    - name: Installer nginx
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+        update_cache: true
+
+    - name: Déployer nginx.conf
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/zhou-efr/tdzhouse/master/ansible/config/nginx/nginx.conf
+        dest: /etc/nginx/nginx.conf
+        mode: "0644"
+      notify: Restart nginx
+
+  handlers:
+    - name: Restart nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted

@@ -1,0 +1,54 @@
+---
+- name: Setup proxmox pre-terraform
+  hosts: proxmox
+  become: true
+  vars:
+    proxmox_host: "{{ lookup('ansible.builtin.env', 'PROXMOX_HOST') }}"
+    proxmox_user: "{{ lookup('ansible.builtin.env', 'PROXMOX_USER') }}"
+    proxmox_token_id: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_ID') }}"
+    proxmox_token_secret: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_SECRET') }}"
+    proxmox_node: "{{ lookup('ansible.builtin.env', 'PROXMOX_NODE') }}"
+
+  tasks:
+    - name: Basic usage
+      ansible.builtin.debug:
+        msg: "{{ proxmox_host }}"
+
+    - name: Setup bridges and vlans
+      include_tasks: tasks/setup_proxmox_networks.yaml
+
+    - name: Create dmz pool
+      community.proxmox.proxmox_pool:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_token_id: "{{ proxmox_token_id }}"
+        api_token_secret: "{{ proxmox_token_secret }}"
+        poolid: dmz
+        comment: 'Machines de DMZ'
+
+    - name: Create  lan pool
+      community.proxmox.proxmox_pool:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_token_id: "{{ proxmox_token_id }}"
+        api_token_secret: "{{ proxmox_token_secret }}"
+        poolid: lan
+        comment: 'Machines internes'
+
+- name: Setup proxmox pre-terraform
+  hosts: localhost
+  tasks:
+    - name: Initialize Terraform
+      command: terraform init
+      args:
+        chdir: ../../terraform
+
+    - name: Plan Terraform execution
+      command: terraform plan --var-file=./variables/instances.tfvars.json --var-file=./variables/secrets.tfvars.json -out plan
+      args:
+        chdir: ../../terraform
+
+    - name: Apply Terraform changes
+      command: terraform apply --var-file=./variables/instances.tfvars.json --var-file=./variables/secrets.tfvars.json -auto-approve
+      args:
+        chdir: ../../terraform

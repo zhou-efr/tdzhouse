@@ -8,3 +8,5 @@ terraform/.terraform.lock.hcl
 packer/template-credentials.pkr.hcl
 ansible/playbooks/tasks/files/FGT_VM64_KVM-v7.6.6.M-build3652-FORTINET.out.kvm.zip
 fortios.qcow2
+/ansible/roles/firewall/files/fortigate-v4.6.6.qcow2
+ansible/inventory.yml

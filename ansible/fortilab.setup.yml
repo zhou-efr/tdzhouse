@@ -1,0 +1,4 @@
+- name: initialise proxmox
+  hosts: proxmox
+  roles:
+    - proxmox

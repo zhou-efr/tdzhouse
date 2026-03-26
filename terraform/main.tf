@@ -10,16 +10,16 @@ terraform {
 }
 
 provider "proxmox" {
-  pm_api_url = var.proxmox.api.url
-  pm_api_token_id = var.proxmox.api.token_id
-  pm_api_token_secret = var.proxmox.api.token_secret
+  pm_api_url = var.proxmox_api_url
+  pm_api_token_id = var.proxmox_api_token_id
+  pm_api_token_secret = var.proxmox_api_token_secret
   pm_tls_insecure = true
 }
 
 resource "proxmox_lxc" "lxc_instances" {
   count = length(var.lxc)
 
-  target_node  = var.proxmox.node
+  target_node  = var.proxmox_node
   hostname     = var.lxc[count.index].name
   vmid = var.lxc[count.index].id
   ostemplate   = var.lxc[count.index].os
@@ -29,7 +29,7 @@ resource "proxmox_lxc" "lxc_instances" {
   nameserver = "1.1.1.1"
   unprivileged = true
 
-  ssh_public_keys = var.proxmox.authorized_keys
+  ssh_public_keys = var.proxmox_authorized_keys
 
   rootfs {
     size     = var.lxc[count.index].root_disk[0].size
@@ -51,7 +51,7 @@ resource "proxmox_vm_qemu" "instances" {
   count = length(var.vms)
 
   # General
-  target_node = var.proxmox.node
+  target_node = var.proxmox_node
   name        = var.vms[count.index].name
   vmid        = var.vms[count.index].id
   # clone       = var.vms[count.index].os

@@ -1,0 +1,41 @@
+vm_list:
+  - name: dmz-firewall
+    id: 500
+    ram: 4096
+    cores: 4
+    sockets: 1
+    os: ""
+    pool: dmz
+    disks:
+      - size: 10G
+        storage: vmstorage
+        slot: scsi1
+    network:
+      - id: 0
+        name: eth0
+        bridge: vmbr0
+        macaddr: 02:00:00:b3:ed:27
+      - id: 1
+        name: eth1
+        bridge: dmz
+        macaddr: ""
+  - name: lan-firewall
+    id: 501
+    ram: 4096
+    cores: 4
+    sockets: 1
+    os: ""
+    pool: dmz
+    disks:
+      - size: 10G
+        storage: vmstorage
+        slot: scsi1
+    network:
+      - id: 1
+        name: eth0
+        bridge: lan
+        macaddr: ""
+      - id: 1
+        name: eth1
+        bridge: dmz
+        macaddr: ""

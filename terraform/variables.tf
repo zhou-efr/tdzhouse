@@ -1,13 +1,26 @@
-variable "proxmox" {
-  type = object({
-    node = string
-    authorized_keys = string
-    api  = object({
-      url           = string
-      token_id      = string
-      token_secret  = string
-    })
-  })
+variable "proxmox_node" {
+  type    = string
+  default = null
+}
+
+variable "proxmox_authorized_keys" {
+  type    = string
+  default = null
+}
+
+variable "proxmox_api_url" {
+  type    = string
+  default = null
+}
+
+variable "proxmox_api_token_id" {
+  type    = string
+  default = null
+}
+
+variable "proxmox_api_token_secret" {
+  type    = string
+  default = null
 }
 
 variable "lxc" {
@@ -47,6 +60,7 @@ variable "vms" {
       id         = number
       name       = string   # Network interface name (e.g., eth0)
       bridge     = string   # Bridge (e.g., vmbr0)
+      macaddr    = string   # Mac adresse
     }))
   }))
 }

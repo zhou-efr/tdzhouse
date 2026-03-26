@@ -3,7 +3,7 @@
 ## <span style="color:rgb(255, 192, 0)">Ansible</span>
 ```
 export $(cat .env | tr -d '\r' | xargs)
-ansible-playbook ansible/playbooks/proxmoxinitialsetup.install.yml -i ansible/inventory.yml --user=root
+ansible-playbook ansible/fortilab.setup.yml -i ansible/inventory.yml --user=root
 ```
 ## <span style="color:rgb(255, 192, 0)">Terraform</span>
 ```

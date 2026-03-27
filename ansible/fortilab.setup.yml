@@ -2,3 +2,25 @@
   hosts: proxmox
   roles:
     - proxmox
+
+- name: initialise terraform
+  hosts: localhost
+  tasks:
+    - name: terraform init
+      command: terraform init
+      args:
+        chdir: "../terraform"
+
+- name: initialise core fortigate
+  import_playbook: "./playbooks/terraform.fortigate.yml"
+  vars:
+    project_dir: "../terraform"
+    gate_id: 500
+    gate_expected_ip: "51.77.188.227"
+    gate_password: "{{ lookup('ansible.builtin.env', 'FORTIGATE_PASSWORD') }}"
+    proxmox_host: "{{ lookup('ansible.builtin.env', 'PROXMOX_HOST') }}"
+    proxmox_user: "{{ lookup('ansible.builtin.env', 'PROXMOX_USER') }}"
+    proxmox_token_id: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_ID') }}"
+    proxmox_token_secret: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_SECRET') }}"
+    proxmox_node: "{{ lookup('ansible.builtin.env', 'TF_VAR_PROXMOX_NODE') }}"
+

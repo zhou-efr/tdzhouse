@@ -54,6 +54,7 @@ resource "proxmox_vm_qemu" "instances" {
   target_node = var.proxmox_node
   name        = var.vms[count.index].name
   vmid        = var.vms[count.index].id
+  vm_state    = var.vms[count.index].vm_state || "running"
   # clone       = var.vms[count.index].os
 
   # Ressources

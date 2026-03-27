@@ -11,3 +11,4 @@ fortios.qcow2
 ./ansible/roles/firewall/files/fortigate-v4.6.6.qcow2
 ./ansible/inventory.yml
 ./venv
+/ansible/files/fortigate-v4.6.6.qcow2

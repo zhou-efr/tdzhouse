@@ -1,0 +1,65 @@
+- name: Deploy fortigate
+  hosts: localhost
+  community.general.terraform:
+    project_path: project_dir
+    state: present
+#    no_color: false
+    complex_vars: true
+    variables:
+      vms:
+        - name: core-firewall
+          id: gate_id
+          ram: 4096
+          cores: 4
+          sockets: 1
+          os: ""
+          pool: dmz
+          vm_state: "stopped"
+          disks:
+            - size: 10G
+              storage: vmstorage
+              slot: scsi1
+          network:
+            - id: 0
+              name: eth0
+              bridge: vmbr0
+              macaddr: 02:00:00:8b:21:ea
+            - id: 1
+              name: eth1
+              bridge: dmz
+              macaddr: ""
+
+- name: load disk to proxmox
+  hosts: proxmox
+  tasks:
+    - name: copy disk to proxmox
+      copy:
+        src: ./files/fortigate-v4.6.6.qcow2
+        dest: /home/zhou/fortigate.qcow2
+        remote_src: yes
+    - name: attach disk to fortigate
+      command: "qm importdisk {{ gate_id }} fortigate.qcow2 local --target-disk scsi0"
+    - name: attach disk
+      proxmox_disk:
+        api_host: proxmox_host
+        api_user: proxmox_user
+        api_token_id: proxmox_token_id
+        api_token_secret: proxmox_token_secret
+        vmid: gate_id
+        disk: "scsi0"
+        state: present
+    - name: Start gate
+      community.proxmox.proxmox_kvm:
+        api_host: proxmox_host
+        api_user: proxmox_user
+        api_token_id: proxmox_token_id
+        api_token_secret: proxmox_token_secret
+        vmid: gate_id
+        node: proxmox_node
+        state: started
+    - name: setup password
+      command: 'echo "{{ gate_password }}\n{{ gate_password }}" | ssh admin@{{ gate_expected_ip }}'
+      retries: 6
+      delay: 30
+      register: result
+      until: result.rc == 0

@@ -24,6 +24,7 @@ variable "proxmox_api_token_secret" {
 }
 
 variable "lxc" {
+  default = []
   type = list(object({
     name     = string
     id       = number
@@ -44,6 +45,7 @@ variable "lxc" {
 }
 
 variable "vms" {
+  default = []
   type = list(object({
     name        = string   # VM Name
     id          = number   # VM ID
@@ -51,6 +53,7 @@ variable "vms" {
     cores       = number   # Number of CPU cores
     sockets     = number   # Number of CPU sockets
     os          = string   # OS template to clone from
+    vm_state    = string
     disks        = list(object({
       size       = string   # Disk size (e.g., 10G)
       storage    = string   # Storage location (e.g., local-lvm)

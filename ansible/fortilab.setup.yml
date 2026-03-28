@@ -11,13 +11,36 @@
       args:
         chdir: "../terraform"
 
-- name: initialise core fortigate
+- name: initialise core firewall
   import_playbook: "./playbooks/terraform.fortigate.yml"
   vars:
-    project_dir: "../terraform"
+    project_dir: "../../terraform"
+    vm_storage: "local"
     gate_id: 500
     gate_expected_ip: "51.77.188.227"
     gate_password: "{{ lookup('ansible.builtin.env', 'FORTIGATE_PASSWORD') }}"
+    proxmox_host: "{{ lookup('ansible.builtin.env', 'PROXMOX_HOST') }}"
+    proxmox_user: "{{ lookup('ansible.builtin.env', 'PROXMOX_USER') }}"
+    proxmox_token_id: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_ID') }}"
+    proxmox_token_secret: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_SECRET') }}"
+    proxmox_node: "{{ lookup('ansible.builtin.env', 'TF_VAR_PROXMOX_NODE') }}"
+
+- name: initialise proxy server
+  import_playbook: "./playbooks/terraform.tinyproxy.yml"
+  vars:
+    project_dir: "../../terraform"
+    vm_storage: "local"
+    proxmox_host: "{{ lookup('ansible.builtin.env', 'PROXMOX_HOST') }}"
+    proxmox_user: "{{ lookup('ansible.builtin.env', 'PROXMOX_USER') }}"
+    proxmox_token_id: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_ID') }}"
+    proxmox_token_secret: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_SECRET') }}"
+    proxmox_node: "{{ lookup('ansible.builtin.env', 'TF_VAR_PROXMOX_NODE') }}"
+
+- name: initialise k3s servers
+  import_playbook: "./playbooks/terraform.k3s-cluster.yml"
+  vars:
+    project_dir: "../../terraform"
+    vm_storage: "local"
     proxmox_host: "{{ lookup('ansible.builtin.env', 'PROXMOX_HOST') }}"
     proxmox_user: "{{ lookup('ansible.builtin.env', 'PROXMOX_USER') }}"
     proxmox_token_id: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_ID') }}"

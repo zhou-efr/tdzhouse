@@ -11,16 +11,16 @@
         variables:
           vms:
             - name: core-firewall
-              id: gate_id
+              id: "{{ gate_id }}"
               ram: 4096
               cores: 4
               sockets: 1
               os: ""
-              pool: dmz
+              pool: tdz-dmz
               vm_state: "stopped"
               disks:
                 - size: 10G
-                  storage: vm_storage
+                  storage: "{{ vm_storage }}"
                   slot: "scsi1"
               network:
                 - id: 0
@@ -36,33 +36,8 @@
   hosts: proxmox
   tasks:
     - name: copy disk to proxmox
-      copy:
-        src: ./files/fortigate-v4.6.6.qcow2
-        dest: /home/zhou/fortigate.qcow2
-        remote_src: yes
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../files/fortigate-v4.6.6.qcow2"
+        dest: "/tmp/fortigate.qcow2"
     - name: attach disk to fortigate
-      command: "qm importdisk {{ gate_id }} fortigate.qcow2 local --target-disk scsi0"
-    - name: attach disk
-      community.proxmox.proxmox_disk:
-        api_host: proxmox_host
-        api_user: proxmox_user
-        api_token_id: proxmox_token_id
-        api_token_secret: proxmox_token_secret
-        vmid: gate_id
-        disk: "scsi0"
-        state: present
-    - name: Start gate
-      community.proxmox.proxmox_kvm:
-        api_host: proxmox_host
-        api_user: proxmox_user
-        api_token_id: proxmox_token_id
-        api_token_secret: proxmox_token_secret
-        vmid: gate_id
-        node: proxmox_node
-        state: started
-    - name: setup password
-      command: 'echo "{{ gate_password }}\n{{ gate_password }}" | ssh admin@{{ gate_expected_ip }}'
-      retries: 6
-      delay: 30
-      register: result
-      until: result.rc == 0
+      command: "qm importdisk {{ gate_id }} /tmp/fortigate.qcow2 local --target-disk scsi0"

@@ -23,7 +23,7 @@
     proxmox_user: "{{ lookup('ansible.builtin.env', 'PROXMOX_USER') }}"
     proxmox_token_id: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_ID') }}"
     proxmox_token_secret: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_SECRET') }}"
-    proxmox_node: "{{ lookup('ansible.builtin.env', 'TF_VAR_PROXMOX_NODE') }}"
+    proxmox_node: "{{ lookup('ansible.builtin.env', 'TF_VAR_proxmox_node') }}"
 
 - name: initialise proxy server
   import_playbook: "./playbooks/terraform.tinyproxy.yml"
@@ -34,7 +34,7 @@
     proxmox_user: "{{ lookup('ansible.builtin.env', 'PROXMOX_USER') }}"
     proxmox_token_id: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_ID') }}"
     proxmox_token_secret: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_SECRET') }}"
-    proxmox_node: "{{ lookup('ansible.builtin.env', 'TF_VAR_PROXMOX_NODE') }}"
+    proxmox_node: "{{ lookup('ansible.builtin.env', 'TF_VAR_proxmox_node') }}"
 
 - name: initialise k3s servers
   import_playbook: "./playbooks/terraform.k3s-cluster.yml"
@@ -45,5 +45,5 @@
     proxmox_user: "{{ lookup('ansible.builtin.env', 'PROXMOX_USER') }}"
     proxmox_token_id: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_ID') }}"
     proxmox_token_secret: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_SECRET') }}"
-    proxmox_node: "{{ lookup('ansible.builtin.env', 'TF_VAR_PROXMOX_NODE') }}"
+    proxmox_node: "{{ lookup('ansible.builtin.env', 'TF_VAR_proxmox_node') }}"
 

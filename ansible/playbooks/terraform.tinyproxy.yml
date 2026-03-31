@@ -11,15 +11,15 @@
         variables:
           lxc:
             - name: "dmz-proxy"
-              id: 505
+              id: 501
               ram: 1024
               cores: 1
               os: "local:vztmpl/debian-13-standard_13.1-2_amd64.tar.zst"
-              pool: "dmz"
+              pool: "tdz-dmz"
               root_disk:
                 - size: "5G"
-                  storage: vm_storage
+                  storage: "{{ vm_storage }}"
               network:
                 - name: "eth0"
                   bridge: "dmz.20"
-                  ipv4: "10.0.2.50"
+                  ipv4: "10.0.2.50/24"

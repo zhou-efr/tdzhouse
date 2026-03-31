@@ -2,8 +2,8 @@
 # <span style="color:rgb(0, 112, 192)">Usage</span>
 ## <span style="color:rgb(255, 192, 0)">Ansible</span>
 ```
-export $(cat .env | tr -d '\r' | xargs)
-ansible-playbook ansible/fortilab.setup.yml -i ansible/inventory.yml --user=root
+while IFS= read -r line; do [[ ! "$line" =~ ^# && ! -z "$line" ]] && export "$line"; done < .env                                                                                                                                                                             
+ansible-playbook ansible/fortilab.setup.yml -i ansible/inventory.yml --user=root -vv
 ```
 ## <span style="color:rgb(255, 192, 0)">Terraform</span>
 ```

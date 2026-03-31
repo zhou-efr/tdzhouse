@@ -1,1 +1,1 @@
-
+fortigate_token: "{{ lookup('ansible.builtin.env', 'FORTIGATE_TOKEN') }}"

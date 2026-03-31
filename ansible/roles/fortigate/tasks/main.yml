@@ -1,3 +1,90 @@
 
 
 
+Oui, les deux cas d'usage sont parfaitement supportés par la collection **`fortinet.fortios`** pour Ansible. Voici le détail :
+
+---
+
+## ✅ 1. Ajouter des VLANs
+
+Deux approches selon ton cas :
+
+**a) Sous-interface VLAN sur une interface physique** (cas le plus courant sur FortiGate) — via le module `fortios_system_interface` :
+
+Le module `fortios_system_interface` permet de créer des interfaces de type `vlan` avec les paramètres `vlanid`, `interface` (l'interface parente) et une IP statique.
+
+Exemple de tâche Ansible :
+```yaml
+- name: Créer un VLAN 100 sur l'interface interne
+  fortinet.fortios.fortios_system_interface:
+    vdom: "root"
+    state: "present"
+    access_token: "<token>"
+    system_interface:
+      name: "VLAN_100"
+      type: "vlan"
+      vlanid: 100
+      interface: "internal"
+      mode: "static"
+      ip: "10.1.1.1 255.255.255.0"
+```
+
+**b) VLANs pour le Switch Controller** (FortiSwitch managé) — via `fortios_switch_controller_vlan` :
+
+Le module `fortios_switch_controller_vlan` permet de configurer des VLANs pour le switch controller, avec les paramètres `vlanid`, `name`, `auth`, `security`, etc.
+
+---
+
+## ✅ 2. Définir des alias d'adresses et groupes d'adresses
+
+**a) Alias d'adresses (objets adresse)** — via `fortios_firewall_address` :
+
+Le module `fortios_firewall_address` permet de configurer des adresses IPv4 avec de nombreux types : subnet, FQDN, plage IP, géo-IP, etc., avec un champ `name` qui sert d'alias.
+
+Exemple :
+```yaml
+- name: Créer un alias d'adresse
+  fortinet.fortios.fortios_firewall_address:
+    vdom: "root"
+    state: "present"
+    access_token: "<token>"
+    firewall_address:
+      name: "SERVEUR-WEB"
+      type: "ipmask"
+      subnet: "192.168.10.10 255.255.255.255"
+```
+
+**b) Groupes d'adresses** — via `fortios_firewall_addrgrp` :
+
+Le module `fortios_firewall_addrgrp` permet de configurer des groupes d'adresses IPv4, en regroupant plusieurs objets adresse existants.
+
+Exemple :
+```yaml
+- name: Créer un groupe d'adresses
+  fortinet.fortios.fortios_firewall_addrgrp:
+    vdom: "root"
+    state: "present"
+    access_token: "<token>"
+    firewall_addrgrp:
+      name: "GROUPE-SERVEURS"
+      member:
+        - name: "SERVEUR-WEB"
+        - name: "SERVEUR-DB"
+```
+
+Il existe aussi `fortios_firewall_addrgrp6` pour les groupes d'adresses IPv6.
+
+---
+
+## Résumé
+
+| Besoin | Module Ansible |
+|--------|---------------|
+| VLAN sur interface physique | `fortios_system_interface` |
+| VLAN sur FortiSwitch managé | `fortios_switch_controller_vlan` |
+| Alias d'adresse (objet) | `fortios_firewall_address` |
+| Groupe d'adresses | `fortios_firewall_addrgrp` |
+
+Pour installer la collection : `ansible-galaxy collection install fortinet.fortios`
+
+Tu veux des exemples de playbooks complets pour l'un de ces cas ?

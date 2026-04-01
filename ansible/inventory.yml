@@ -35,4 +35,5 @@ all:
     firewall:
       hosts:
         core-fortigate:
-          ansible_host: 10.1.1.1
+          ansible_user: admin
+          ansible_host: 51.77.188.227

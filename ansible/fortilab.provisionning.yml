@@ -1,4 +1,7 @@
 - name : Provisionning core fortigate
   hosts : core-fortigate
+  connection: httpapi
+  collections:
+    - fortinet.fortios
   roles:
     - fortigate

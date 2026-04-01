@@ -9,8 +9,13 @@ ansible-playbook ansible/fortilab.setup.yml -i ansible/inventory.yml --user=root
 
 ```
 export $(cat .env.fortinet | tr -d '\r' | xargs)
-ansible-playbook ansible/fortilab.setup.yml -i ansible/inventory.yml --user=root -vv
+ansible-playbook ansible/fortilab.provisionning.yml -i ansible/inventory.yml --user=root -vv
 ```
+# <span style="color:rgb(0, 112, 192)">Dev</span>
+## <span style="color:rgb(255, 192, 0)">Ansible</span>
+### <span style="color:rgb(115, 115, 115)">Fortios</span>
+bypass admin password init https://community.fortinet.com/t5/Support-Forum/Ansible-and-FortiGate-Initial-Configuration/m-p/216161
+create token with ansible https://fndn.fortinet.net/index.php?/cloud/ansible/&doc=fortios&dir=&page=faq.html
 # <span style="color:rgb(0, 112, 192)">Configuration</span>
 ## <span style="color:rgb(255, 192, 0)">Git</span>
 Les variables d'environnement se trouvent dans un fichier .env à la racine du projet. Il faut utiliser les 

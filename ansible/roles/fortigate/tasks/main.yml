@@ -1,23 +1,30 @@
+- name: Env var loading validation
+  ansible.builtin.debug:
+    msg: "{{ ansible_httpapi_host }}"
+
 - name: Interface wan
-  fortios_system_interface:
+  fortinet.fortios.fortios_system_interface:
     vdom: "root"
     state: "present"
+    access_token: "{{ fortigate_token }}"
     system_interface:
       name: "port1"
       alias: "wan"
 
 - name: Interface dmz
-  fortios_system_interface:
+  fortinet.fortios.fortios_system_interface:
     vdom: "root"
     state: "present"
+    access_token: "{{ fortigate_token }}"
     system_interface:
       name: "port2"
       alias: "dmz"
 
 - name: Interface lan
-  fortios_system_interface:
+  fortinet.fortios.fortios_system_interface:
     vdom: "root"
     state: "present"
+    access_token: "{{ fortigate_token }}"
     system_interface:
       name: "port3"
       alias: "lan"
@@ -199,6 +206,7 @@
   fortios_firewall_policy:
     vdom: "root"
     state: "present"
+    access_token: "{{ fortigate_token }}"
     firewall_policy:
       name: "proxy to internet"
       srcintf:

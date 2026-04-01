@@ -12,3 +12,5 @@ fortios.qcow2
 ./ansible/inventory.yml
 ./venv
 /ansible/files/fortigate-v4.6.6.qcow2
+/terraform/terraform.tfstate
+/terraform/terraform.tfstate.backup

@@ -69,19 +69,6 @@
     cidr: "10.1.1.0/24"
     state: present
 
-- name: Create VLAN interface lan home assistant
-  community.proxmox.proxmox_node_network:
-    api_host: "{{ proxmox_host }}"
-    api_user: "{{ proxmox_user }}"
-    api_token_id: "{{ proxmox_token_id }}"
-    api_token_secret: "{{ proxmox_token_secret }}"
-    node: "{{ proxmox_node }}"
-    iface: "lan.20"
-    iface_type: "vlan"
-    autostart: true
-    cidr: "10.1.2.0/24"
-    state: present
-
 - name: Apply network changes
   community.proxmox.proxmox_node_network:
     api_host: "{{ proxmox_host }}"

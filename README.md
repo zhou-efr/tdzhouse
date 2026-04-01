@@ -1,13 +1,15 @@
 # TDZ House
 # <span style="color:rgb(0, 112, 192)">Usage</span>
 ## <span style="color:rgb(255, 192, 0)">Ansible</span>
+TODO: cp cl depuis obsidian
 ```
-while IFS= read -r line; do [[ ! "$line" =~ ^# && ! -z "$line" ]] && export "$line"; done < .env                                                                                                                                                                             
+export $(cat .env.fortinet | tr -d '\r' | xargs)
 ansible-playbook ansible/fortilab.setup.yml -i ansible/inventory.yml --user=root -vv
 ```
-## <span style="color:rgb(255, 192, 0)">Terraform</span>
+
 ```
-terraform plan --var-file=.\instances.tfvars.json --var-file=.\secrets.tfvars.json -out plan
+export $(cat .env.fortinet | tr -d '\r' | xargs)
+ansible-playbook ansible/fortilab.setup.yml -i ansible/inventory.yml --user=root -vv
 ```
 # <span style="color:rgb(0, 112, 192)">Configuration</span>
 ## <span style="color:rgb(255, 192, 0)">Git</span>
@@ -68,9 +70,3 @@ fonctionnalités de PyCharm pour lancer Terraform avec les bonnes variables d'en
 - VPN satisfactory - 10.2.1.0/24
 	- `dmz-vpn` - static 10.2.1.1
 	- `PC-MP` - static 10.2.1.50
-# <span style="color:rgb(0, 112, 192)">Scripts</span>
-## <span style="color:rgb(255, 192, 0)">VPN</span>
-- Le script vérifie toutes les minutes les lasts handshake de chaque peer. Si le dernier handshake date d'il y a 
-plus de 180s il est considéré comme déconnecté. À la connexion ou la déconnexion, le script envoi un signal au home
-assistant.
-- Pour executer le script toutes les minutes on enregistre le bash dans un crontab. 

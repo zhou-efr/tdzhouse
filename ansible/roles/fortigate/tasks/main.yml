@@ -1,90 +1,219 @@
+- name: Interface wan
+  fortios_system_interface:
+    vdom: "root"
+    state: "present"
+    system_interface:
+      name: "port1"
+      alias: "wan"
 
+- name: Interface dmz
+  fortios_system_interface:
+    vdom: "root"
+    state: "present"
+    system_interface:
+      name: "port2"
+      alias: "dmz"
 
+- name: Interface lan
+  fortios_system_interface:
+    vdom: "root"
+    state: "present"
+    system_interface:
+      name: "port3"
+      alias: "lan"
 
-Oui, les deux cas d'usage sont parfaitement supportés par la collection **`fortinet.fortios`** pour Ansible. Voici le détail :
-
----
-
-## ✅ 1. Ajouter des VLANs
-
-Deux approches selon ton cas :
-
-**a) Sous-interface VLAN sur une interface physique** (cas le plus courant sur FortiGate) — via le module `fortios_system_interface` :
-
-Le module `fortios_system_interface` permet de créer des interfaces de type `vlan` avec les paramètres `vlanid`, `interface` (l'interface parente) et une IP statique.
-
-Exemple de tâche Ansible :
-```yaml
-- name: Créer un VLAN 100 sur l'interface interne
+- name: Ajouter vlan dmz in
   fortinet.fortios.fortios_system_interface:
     vdom: "root"
     state: "present"
-    access_token: "<token>"
+    access_token: "{{ fortigate_token }}"
     system_interface:
-      name: "VLAN_100"
+      name: "dmz-in"
       type: "vlan"
-      vlanid: 100
+      vlanid: 10
       interface: "internal"
       mode: "static"
-      ip: "10.1.1.1 255.255.255.0"
-```
+      ip: "10.0.1.0 255.255.255.0"
 
-**b) VLANs pour le Switch Controller** (FortiSwitch managé) — via `fortios_switch_controller_vlan` :
+- name: Ajouter vlan dmz out
+  fortinet.fortios.fortios_system_interface:
+    vdom: "root"
+    state: "present"
+    access_token: "{{ fortigate_token }}"
+    system_interface:
+      name: "dmz-out"
+      type: "vlan"
+      vlanid: 20
+      interface: "internal"
+      mode: "static"
+      ip: "10.0.2.0 255.255.255.0"
 
-Le module `fortios_switch_controller_vlan` permet de configurer des VLANs pour le switch controller, avec les paramètres `vlanid`, `name`, `auth`, `security`, etc.
+- name: Ajouter vlan lan web
+  fortinet.fortios.fortios_system_interface:
+    vdom: "root"
+    state: "present"
+    access_token: "{{ fortigate_token }}"
+    system_interface:
+      name: "lan-web"
+      type: "vlan"
+      vlanid: 10
+      interface: "internal"
+      mode: "static"
+      ip: "10.1.1.0 255.255.255.0"
 
----
-
-## ✅ 2. Définir des alias d'adresses et groupes d'adresses
-
-**a) Alias d'adresses (objets adresse)** — via `fortios_firewall_address` :
-
-Le module `fortios_firewall_address` permet de configurer des adresses IPv4 avec de nombreux types : subnet, FQDN, plage IP, géo-IP, etc., avec un champ `name` qui sert d'alias.
-
-Exemple :
-```yaml
-- name: Créer un alias d'adresse
+- name: Alias reverse-proxy
   fortinet.fortios.fortios_firewall_address:
     vdom: "root"
     state: "present"
-    access_token: "<token>"
+    access_token: "{{ fortigate_token }}"
     firewall_address:
-      name: "SERVEUR-WEB"
+      name: "reverse-proxy"
       type: "ipmask"
-      subnet: "192.168.10.10 255.255.255.255"
-```
+      subnet: "10.0.1.50 255.255.255.255"
 
-**b) Groupes d'adresses** — via `fortios_firewall_addrgrp` :
+- name: Alias proxy
+  fortinet.fortios.fortios_firewall_address:
+    vdom: "root"
+    state: "present"
+    access_token: "{{ fortigate_token }}"
+    firewall_address:
+      name: "proxy"
+      type: "ipmask"
+      subnet: "10.0.2.50 255.255.255.255"
 
-Le module `fortios_firewall_addrgrp` permet de configurer des groupes d'adresses IPv4, en regroupant plusieurs objets adresse existants.
+- name: Alias ingress k3s
+  fortinet.fortios.fortios_firewall_address:
+    vdom: "root"
+    state: "present"
+    access_token: "{{ fortigate_token }}"
+    firewall_address:
+      name: "k3s-ingress"
+      type: "ipmask"
+      subnet: "10.1.1.50 255.255.255.255"
 
-Exemple :
-```yaml
-- name: Créer un groupe d'adresses
+- name: Alias server k3s 00
+  fortinet.fortios.fortios_firewall_address:
+    vdom: "root"
+    state: "present"
+    access_token: "{{ fortigate_token }}"
+    firewall_address:
+      name: "k3s-server-00"
+      type: "ipmask"
+      subnet: "10.1.1.60 255.255.255.255"
+
+- name: Alias server k3s 01
+  fortinet.fortios.fortios_firewall_address:
+    vdom: "root"
+    state: "present"
+    access_token: "{{ fortigate_token }}"
+    firewall_address:
+      name: "k3s-server-01"
+      type: "ipmask"
+      subnet: "10.1.1.61 255.255.255.255"
+
+- name: Alias node k3s 00
+  fortinet.fortios.fortios_firewall_address:
+    vdom: "root"
+    state: "present"
+    access_token: "{{ fortigate_token }}"
+    firewall_address:
+      name: "k3s-node-00"
+      type: "ipmask"
+      subnet: "10.1.1.70 255.255.255.255"
+
+- name: Alias node k3s 01
+  fortinet.fortios.fortios_firewall_address:
+    vdom: "root"
+    state: "present"
+    access_token: "{{ fortigate_token }}"
+    firewall_address:
+      name: "k3s-node-01"
+      type: "ipmask"
+      subnet: "10.1.1.71 255.255.255.255"
+
+- name: Alias node k3s 02
+  fortinet.fortios.fortios_firewall_address:
+    vdom: "root"
+    state: "present"
+    access_token: "{{ fortigate_token }}"
+    firewall_address:
+      name: "k3s-node-02"
+      type: "ipmask"
+      subnet: "10.1.1.72 255.255.255.255"
+
+- name: Groupe node k3s
   fortinet.fortios.fortios_firewall_addrgrp:
     vdom: "root"
     state: "present"
-    access_token: "<token>"
+    access_token: "{{ fortigate_token }}"
     firewall_addrgrp:
-      name: "GROUPE-SERVEURS"
+      name: "k3s-nodes"
       member:
-        - name: "SERVEUR-WEB"
-        - name: "SERVEUR-DB"
-```
+        - name: "k3s-node-00"
+        - name: "k3s-node-01"
+        - name: "k3s-node-02"
 
-Il existe aussi `fortios_firewall_addrgrp6` pour les groupes d'adresses IPv6.
+- name: Groupe servers k3s
+  fortinet.fortios.fortios_firewall_addrgrp:
+    vdom: "root"
+    state: "present"
+    access_token: "{{ fortigate_token }}"
+    firewall_addrgrp:
+      name: "k3s-servers"
+      member:
+        - name: "k3s-server-00"
+        - name: "k3s-server-01"
 
----
+- name: Alias l'appart
+  fortinet.fortios.fortios_firewall_address:
+    vdom: "root"
+    state: "present"
+    access_token: "{{ fortigate_token }}"
+    firewall_address:
+      name: "l-appart"
+      type: "ipmask"
+      subnet: "176.187.69.6 255.255.255.255"
 
-## Résumé
+- name: Alias tour alto
+  fortinet.fortios.fortios_firewall_address:
+    vdom: "root"
+    state: "present"
+    access_token: "{{ fortigate_token }}"
+    firewall_address:
+      name: "tour-alto"
+      type: "ipmask"
+      subnet: "84.14.248.10 255.255.255.255"
 
-| Besoin | Module Ansible |
-|--------|---------------|
-| VLAN sur interface physique | `fortios_system_interface` |
-| VLAN sur FortiSwitch managé | `fortios_switch_controller_vlan` |
-| Alias d'adresse (objet) | `fortios_firewall_address` |
-| Groupe d'adresses | `fortios_firewall_addrgrp` |
+- name: Groupe trusted hosts
+  fortinet.fortios.fortios_firewall_addrgrp:
+    vdom: "root"
+    state: "present"
+    access_token: "{{ fortigate_token }}"
+    firewall_addrgrp:
+      name: "trusted-hosts"
+      member:
+        - name: "l-appart"
+        - name: "tour-alto"
 
-Pour installer la collection : `ansible-galaxy collection install fortinet.fortios`
-
-Tu veux des exemples de playbooks complets pour l'un de ces cas ?
+- name: Policy proxy to internet
+  fortios_firewall_policy:
+    vdom: "root"
+    state: "present"
+    firewall_policy:
+      name: "proxy to internet"
+      srcintf:
+        - name: "dmz-out"
+      dstintf:
+        - name: "wan"
+      srcaddr:
+        - name: "proxy"
+      dstaddr:
+        - name: "ALL"
+      service:
+        - name: "HTTP"
+        - name: "HTTPS"
+        - name: "FTP"
+      schedule: "always"
+      action: "accept"
+      nat: "enable"
+      logtraffic: "all"

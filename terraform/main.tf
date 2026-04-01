@@ -29,7 +29,9 @@ resource "proxmox_lxc" "lxc_instances" {
   nameserver = "1.1.1.1"
   unprivileged = true
 
-  ssh_public_keys = var.proxmox_authorized_keys
+  ssh_public_keys = <<-EOT
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPBfQOXHJNhLYqyF9YIbOJdCvdNCIC2+aN9H7uyLY50x zhou@zhou-pc
+  EOT
 
   rootfs {
     size     = var.lxc[count.index].root_disk[0].size
@@ -54,7 +56,7 @@ resource "proxmox_vm_qemu" "instances" {
   target_node = var.proxmox_node
   name        = var.vms[count.index].name
   vmid        = var.vms[count.index].id
-  vm_state    = var.vms[count.index].vm_state
+  # vm_state    = var.vms[count.index].vm_state
   # clone       = var.vms[count.index].os
 
   # Ressources

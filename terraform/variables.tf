@@ -5,7 +5,7 @@ variable "proxmox_node" {
 
 variable "proxmox_authorized_keys" {
   type    = string
-  default = null
+  default = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPBfQOXHJNhLYqyF9YIbOJdCvdNCIC2+aN9H7uyLY50x zhou@zhou-pc"
 }
 
 variable "proxmox_api_url" {

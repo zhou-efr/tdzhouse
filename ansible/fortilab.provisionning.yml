@@ -1,0 +1,4 @@
+- name : Provisionning core fortigate
+  hosts : core-fortigate
+  roles:
+    - fortigate

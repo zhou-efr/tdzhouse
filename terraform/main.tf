@@ -30,7 +30,8 @@ resource "proxmox_lxc" "lxc_instances" {
   unprivileged = true
 
   ssh_public_keys = <<-EOT
-    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPBfQOXHJNhLYqyF9YIbOJdCvdNCIC2+aN9H7uyLY50x zhou@zhou-pc
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPBfQOXHJNhLYqyF9YIbOJdCvdNCIC2+aN9H7uyLY50x
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDBHovtHE37E3kGaY6NNxdFKm5UBg0EOgXfOMjL8I37E
   EOT
 
   rootfs {

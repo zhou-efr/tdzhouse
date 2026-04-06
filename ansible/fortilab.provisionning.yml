@@ -1,6 +1,6 @@
 - name : Provisionning core fortigate
   hosts : core-fortigate
-  connection: httpapi
+  gather_facts: false
   collections:
     - fortinet.fortios
   roles:

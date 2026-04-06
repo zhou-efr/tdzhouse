@@ -1,222 +1,107 @@
 - name: Env var loading validation
   ansible.builtin.debug:
-    msg: "{{ ansible_httpapi_host }}"
+    msg: "{{ fortigate_token }}"
 
 - name: Interface wan
   fortinet.fortios.fortios_system_interface:
     vdom: "root"
     state: "present"
-    access_token: "{{ fortigate_token }}"
     system_interface:
       name: "port1"
       alias: "wan"
 
-- name: Interface dmz
+- name: Configure internal interfaces
   fortinet.fortios.fortios_system_interface:
     vdom: "root"
     state: "present"
     access_token: "{{ fortigate_token }}"
     system_interface:
-      name: "port2"
-      alias: "dmz"
-
-- name: Interface lan
-  fortinet.fortios.fortios_system_interface:
-    vdom: "root"
-    state: "present"
-    access_token: "{{ fortigate_token }}"
-    system_interface:
-      name: "port3"
-      alias: "lan"
-
-- name: Ajouter vlan dmz in
-  fortinet.fortios.fortios_system_interface:
-    vdom: "root"
-    state: "present"
-    access_token: "{{ fortigate_token }}"
-    system_interface:
-      name: "dmz-in"
-      type: "vlan"
-      vlanid: 10
-      interface: "internal"
+      name: "{{ item.port }}"
+      alias: "{{ item.alias }}"
       mode: "static"
-      ip: "10.0.1.0 255.255.255.0"
+      ip: "{{ item.subnet }}"
+  loop:
+    - { port: "port2", alias: "dmz", subnet: "10.0.0.1/24" }
+    - { port: "port3", alias: "lan", subnet: "10.1.0.1/24" }
 
-- name: Ajouter vlan dmz out
+- name: Ajouter vlans
   fortinet.fortios.fortios_system_interface:
     vdom: "root"
     state: "present"
     access_token: "{{ fortigate_token }}"
     system_interface:
-      name: "dmz-out"
+      vdom: "root"
+      name: "{{ item.name }}"
       type: "vlan"
-      vlanid: 20
-      interface: "internal"
+      vlanid: "{{ item.vlanid }}"
+      interface: "{{ item.port }}"
       mode: "static"
-      ip: "10.0.2.0 255.255.255.0"
+      ip: "{{ item.subnet }}"
+  loop:
+    - { name: 'dmz-in', port: 'port2', vlanid: 10, subnet: '10.0.1.1 255.255.255.0' }
+    - { name: 'dmz-out', port: 'port2', vlanid: 20, subnet: '10.0.2.1 255.255.255.0' }
+    - { name: 'lan-web', port: 'port3', vlanid: 10, subnet: '10.1.1.1 255.255.255.0' }
 
-- name: Ajouter vlan lan web
-  fortinet.fortios.fortios_system_interface:
-    vdom: "root"
-    state: "present"
-    access_token: "{{ fortigate_token }}"
-    system_interface:
-      name: "lan-web"
-      type: "vlan"
-      vlanid: 10
-      interface: "internal"
-      mode: "static"
-      ip: "10.1.1.0 255.255.255.0"
-
-- name: Alias reverse-proxy
+- name: Setup aliases
   fortinet.fortios.fortios_firewall_address:
     vdom: "root"
     state: "present"
     access_token: "{{ fortigate_token }}"
     firewall_address:
-      name: "reverse-proxy"
+      name: "{{ item.name }}"
       type: "ipmask"
-      subnet: "10.0.1.50 255.255.255.255"
+      subnet: "{{ item.subnet }}"
+  loop:
+    - { name: 'reverse-proxy', subnet: "10.0.1.50/32" }
+    - { name: 'proxy', subnet: "10.0.2.50/32" }
+    - { name: 'k3s-ingress', subnet: "10.1.1.50/32" }
+    - { name: 'k3s-server-00', subnet: "10.1.1.60/32" }
+    - { name: 'k3s-server-01', subnet: "10.1.1.61/32" }
+    - { name: 'k3s-node-00', subnet: "10.1.1.70/32" }
+    - { name: 'k3s-node-01', subnet: "10.1.1.71/32" }
+    - { name: 'k3s-node-02', subnet: "10.1.1.72/32" }
+    - { name: 'l-appart', subnet: "176.187.69.6/32" }
+    - { name: 'tour-alto', subnet: "84.14.248.10/32" }
 
-- name: Alias proxy
-  fortinet.fortios.fortios_firewall_address:
-    vdom: "root"
-    state: "present"
-    access_token: "{{ fortigate_token }}"
-    firewall_address:
-      name: "proxy"
-      type: "ipmask"
-      subnet: "10.0.2.50 255.255.255.255"
-
-- name: Alias ingress k3s
-  fortinet.fortios.fortios_firewall_address:
-    vdom: "root"
-    state: "present"
-    access_token: "{{ fortigate_token }}"
-    firewall_address:
-      name: "k3s-ingress"
-      type: "ipmask"
-      subnet: "10.1.1.50 255.255.255.255"
-
-- name: Alias server k3s 00
-  fortinet.fortios.fortios_firewall_address:
-    vdom: "root"
-    state: "present"
-    access_token: "{{ fortigate_token }}"
-    firewall_address:
-      name: "k3s-server-00"
-      type: "ipmask"
-      subnet: "10.1.1.60 255.255.255.255"
-
-- name: Alias server k3s 01
-  fortinet.fortios.fortios_firewall_address:
-    vdom: "root"
-    state: "present"
-    access_token: "{{ fortigate_token }}"
-    firewall_address:
-      name: "k3s-server-01"
-      type: "ipmask"
-      subnet: "10.1.1.61 255.255.255.255"
-
-- name: Alias node k3s 00
-  fortinet.fortios.fortios_firewall_address:
-    vdom: "root"
-    state: "present"
-    access_token: "{{ fortigate_token }}"
-    firewall_address:
-      name: "k3s-node-00"
-      type: "ipmask"
-      subnet: "10.1.1.70 255.255.255.255"
-
-- name: Alias node k3s 01
-  fortinet.fortios.fortios_firewall_address:
-    vdom: "root"
-    state: "present"
-    access_token: "{{ fortigate_token }}"
-    firewall_address:
-      name: "k3s-node-01"
-      type: "ipmask"
-      subnet: "10.1.1.71 255.255.255.255"
-
-- name: Alias node k3s 02
-  fortinet.fortios.fortios_firewall_address:
-    vdom: "root"
-    state: "present"
-    access_token: "{{ fortigate_token }}"
-    firewall_address:
-      name: "k3s-node-02"
-      type: "ipmask"
-      subnet: "10.1.1.72 255.255.255.255"
-
-- name: Groupe node k3s
+- name: Create groups
   fortinet.fortios.fortios_firewall_addrgrp:
     vdom: "root"
     state: "present"
     access_token: "{{ fortigate_token }}"
     firewall_addrgrp:
-      name: "k3s-nodes"
-      member:
+      name: "{{ item.name }}"
+      member: "{{ item.members }}"
+  loop:
+    - name: "trusted-hosts"
+      members:
+        - name: "l-appart"
+        - name: "tour-alto"
+    - name: "k3s-servers"
+      members:
+        - name: "k3s-server-00"
+        - name: "k3s-server-01"
+    - name: "k3s-nodes"
+      members:
         - name: "k3s-node-00"
         - name: "k3s-node-01"
         - name: "k3s-node-02"
 
-- name: Groupe servers k3s
-  fortinet.fortios.fortios_firewall_addrgrp:
-    vdom: "root"
-    state: "present"
-    access_token: "{{ fortigate_token }}"
-    firewall_addrgrp:
-      name: "k3s-servers"
-      member:
-        - name: "k3s-server-00"
-        - name: "k3s-server-01"
-
-- name: Alias l'appart
-  fortinet.fortios.fortios_firewall_address:
-    vdom: "root"
-    state: "present"
-    access_token: "{{ fortigate_token }}"
-    firewall_address:
-      name: "l-appart"
-      type: "ipmask"
-      subnet: "176.187.69.6 255.255.255.255"
-
-- name: Alias tour alto
-  fortinet.fortios.fortios_firewall_address:
-    vdom: "root"
-    state: "present"
-    access_token: "{{ fortigate_token }}"
-    firewall_address:
-      name: "tour-alto"
-      type: "ipmask"
-      subnet: "84.14.248.10 255.255.255.255"
-
-- name: Groupe trusted hosts
-  fortinet.fortios.fortios_firewall_addrgrp:
-    vdom: "root"
-    state: "present"
-    access_token: "{{ fortigate_token }}"
-    firewall_addrgrp:
-      name: "trusted-hosts"
-      member:
-        - name: "l-appart"
-        - name: "tour-alto"
-
 - name: Policy proxy to internet
-  fortios_firewall_policy:
+  fortinet.fortios.fortios_firewall_policy:
     vdom: "root"
     state: "present"
     access_token: "{{ fortigate_token }}"
     firewall_policy:
+      policyid: 1
       name: "proxy to internet"
       srcintf:
         - name: "dmz-out"
       dstintf:
-        - name: "wan"
+        - name: "port1"
       srcaddr:
         - name: "proxy"
       dstaddr:
-        - name: "ALL"
+        - name: "all"
       service:
         - name: "HTTP"
         - name: "HTTPS"
@@ -225,3 +110,35 @@
       action: "accept"
       nat: "enable"
       logtraffic: "all"
+
+- name: trusted-hosts to all
+  fortinet.fortios.fortios_firewall_policy:
+    vdom: "root"
+    state: "present"
+    access_token: "{{ fortigate_token }}"
+    firewall_policy:
+      policyid: "{{ item.id }}"
+      name: "trusted-hosts to {{ item.name }}"
+      srcintf:
+        - name: "port1"
+      dstintf:
+        - name: "{{ item.name }}"
+      srcaddr:
+        - name: "trusted-hosts"
+      dstaddr:
+        - name: "all"
+      service:
+        - name: "HTTP"
+        - name: "HTTPS"
+        - name: "SSH"
+      schedule: "always"
+      action: "accept"
+      nat: "enable"
+      logtraffic: "all"
+  loop:
+    - name: "dmz-in"
+      id: 2
+    - name: "dmz-out"
+      id: 3
+    - name: "lan-web"
+      id: 4

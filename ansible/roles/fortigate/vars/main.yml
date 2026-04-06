@@ -1,4 +1,10 @@
 fortigate_token: "{{ lookup('ansible.builtin.env', 'FORTIGATE_TOKEN') }}"
-ansible_httpapi_host: "{{ ansible_host }}"
-ansible_httpapi_use_ssl: yes
-ansible_httpapi_validate_certs: no
+fortigate_host: "{{ lookup('ansible.builtin.env', 'FORTIGATE_IP') }}"
+fortigate_username: "{{ lookup('ansible.builtin.env', 'FORTIGATE_USR') }}"
+fortigate_password: "{{ lookup('ansible.builtin.env', 'FORTIGATE_PWD') }}"
+
+vpn_name: "trusted_host_access"
+vpn_remote_ip: "trusted.fortilab.tdz.ovh"
+vpn_local_ip: "10.0.3.1"
+vpn_subnet: "255.255.255.0"
+psk: "{{ lookup('ansible.builtin.env', 'FORTIGATE_VPN_SECRET') }}"

@@ -1,0 +1,5 @@
+tinyproxy_src_dir: /opt/tinyproxy
+tinyproxy_conf_dir: /etc/tinyproxy
+tinyproxy_conf_file: /etc/tinyproxy/tinyproxy.conf
+tinyproxy_log_dir: /var/log/tinyproxy
+tinyproxy_log_file: /var/log/tinyproxy/default.conf.log

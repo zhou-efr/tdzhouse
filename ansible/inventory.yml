@@ -35,5 +35,12 @@ all:
     firewall:
       hosts:
         core-fortigate:
-          ansible_user: admin
-          ansible_host: 51.77.188.227
+          ansible_host: "{{ lookup('ansible.builtin.env', 'FORTIGATE_IP') }}"
+          ansible_connection: httpapi
+          ansible_network_os: fortinet.fortios.fortios
+          ansible_httpapi_use_ssl: true
+          ansible_httpapi_validate_certs: false
+          ansible_user: "{{ lookup('ansible.builtin.env', 'FORTIGATE_USR') }}"
+          ansible_password: "{{ lookup('ansible.builtin.env', 'FORTIGATE_PWD') }}"
+          ansible_httpapi_port: 443
+          vdom: "root"

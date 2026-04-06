@@ -1,0 +1,78 @@
+- name: Base Debian
+  include_tasks: tasks/quick_debian.yml
+
+- name: Install dependencies
+  ansible.builtin.apt:
+    name:
+      - build-essential
+      - git
+      - wget
+      - autoconf
+      - automake
+      - libtool
+    state: present
+    update_cache: true
+
+- name: Clone tinyproxy
+  ansible.builtin.git:
+    repo: https://github.com/tinyproxy/tinyproxy.git
+    dest: "{{ tinyproxy_src_dir }}"
+    version: master
+
+- name: Tinyproxy autogen
+  ansible.builtin.command:
+    cmd: ./autogen.sh
+    chdir: "{{ tinyproxy_src_dir }}"
+  args:
+    creates: "{{ tinyproxy_src_dir }}/configure"
+
+- name: Tinyproxy configuration
+  ansible.builtin.command:
+    cmd: ./configure --enable-filter
+    chdir: "{{ tinyproxy_src_dir }}"
+  args:
+    creates: "{{ tinyproxy_src_dir }}/Makefile"
+
+- name: Compile tinyproxy
+  ansible.builtin.command:
+    cmd: make
+    chdir: "{{ tinyproxy_src_dir }}"
+  args:
+    creates: "{{ tinyproxy_src_dir }}/src/tinyproxy"
+
+- name: Install tinyproxy
+  ansible.builtin.command:
+    cmd: make install
+    chdir: "{{ tinyproxy_src_dir }}"
+  args:
+    creates: /usr/local/bin/tinyproxy
+
+- name: Create configuration directory
+  ansible.builtin.file:
+    path: "{{ tinyproxy_conf_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Download tinyproxy configuration
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/zhou-efr/tdzhouse/master/ansible/config/tinyproxy/tinyproxy.yml
+    dest: "{{ tinyproxy_conf_file }}"
+    mode: "0766"
+
+- name: Create log directory
+  ansible.builtin.file:
+    path: "{{ tinyproxy_log_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Create log file
+  ansible.builtin.file:
+    path: "{{ tinyproxy_log_file }}"
+    state: touch
+    mode: "0766"
+
+- name: Start tinyproxy
+  ansible.builtin.shell: |
+    nohup /usr/local/bin/tinyproxy -d -c {{ tinyproxy_conf_file }} >/var/log/tinyproxy/startup.log 2>&1 &
+  args:
+    creates: /var/log/tinyproxy/startup.log

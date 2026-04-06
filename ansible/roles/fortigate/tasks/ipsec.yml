@@ -1,0 +1,73 @@
+- name: Configure IPSec VPN Phase 1 (IKE)
+  fortinet.fortios.fortios_system_vpn_ipsec_phase1_interface:
+    host: "{{ fortigate_host }}"
+    username: "{{ fortigate_username }}"
+    password: "{{ fortigate_password }}"
+    vdom: "root"
+    state: "present"
+    system_vpn_ipsec_phase1_interface:
+      name: "{{ vpn_name }}"
+      interface: "port1"
+      remote_gateway: "static"
+      gateway: "{{ vpn_remote_ip }}"
+      psksecret: "{{ psk }}"
+      mode: "main"
+      proposal: "aes256-sha256"
+      netbios: "disable"
+      dhgrp: "20"
+
+- name: Configure IPSec VPN Phase 2 (IPSec)
+  fortinet.fortios.fortios_system_vpn_ipsec_phase2_interface:
+    host: "{{ fortigate_host }}"
+    username: "{{ fortigate_username }}"
+    password: "{{ fortigate_password }}"
+    vdom: "root"
+    state: "present"
+    system_vpn_ipsec_phase2_interface:
+      name: "{{ vpn_name }}-phase2"
+      phase1name: "{{ vpn_name }}"
+      proposal: "aes256-sha256"
+      pfs: "disable"
+      replay: "enable"
+      keylifeseconds: 3600
+      local_subnet: "{{ vpn_local_ip }}/24"  # Local network (your private network)
+      remote_subnet: "0.0.0.0/0"  # Allow any remote subnet (client-to-site)
+
+- name: Enable IPSec VPN on the FortiGate
+  fortinet.fortios.fortios_system_vpn_ipsec:
+    host: "{{ fortigate_host }}"
+    username: "{{ fortigate_username }}"
+    password: "{{ fortigate_password }}"
+    vdom: "root"
+    state: "present"
+    system_vpn_ipsec:
+      name: "{{ vpn_name }}"
+      interface: "port1"
+      status: "enable"
+
+- name: Allow traffic from VPN clients in the firewall policy
+  fortinet.fortios.fortios_firewall_policy:
+    host: "{{ fortigate_host }}"
+    username: "{{ fortigate_username }}"
+    password: "{{ fortigate_password }}"
+    vdom: "root"
+    state: "present"
+    firewall_policy:
+      name: "Allow VPN Traffic"
+      srcintf:
+        - name: "{{ vpn_name }}"
+      dstintf:
+        - name: "{{ item }}"
+      action: "accept"
+      srcaddr:
+        - name: "all"
+      dstaddr:
+        - name: "all"
+      schedule: "always"
+      service: "ALL"
+      logtraffic: "all"
+      nat: "disable"
+  loop:
+    - "dmz-in"
+    - "dmz-out"
+    - "lan-web"

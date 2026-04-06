@@ -1,17 +1,4 @@
-- name: initialise proxmox
-  hosts: proxmox
-  roles:
-    - proxmox
-
-- name: initialise terraform
-  hosts: localhost
-  tasks:
-    - name: terraform init
-      command: terraform init
-      args:
-        chdir: "../terraform"
-
-- name: Deploy terraform
+- name: Destroy terraform
   hosts: localhost
   vars:
     project_dir: "../terraform"
@@ -23,15 +10,14 @@
     proxmox_token_secret: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_SECRET') }}"
     proxmox_node: "{{ lookup('ansible.builtin.env', 'TF_VAR_proxmox_node') }}"
   tasks:
-    - name: terraform deploy
+    - name: terraform destroy
       community.general.terraform:
         project_path: "{{ project_dir }}"
-        state: present
+        state: absent
         complex_vars: true
         variables:
           lxc:
             - name: "dmz-proxy"
-              tags: tdz
               id: 501
               ram: 1024
               cores: 1
@@ -45,7 +31,6 @@
                   bridge: "dmz.20"
                   ipv4: "10.0.2.50/24"
             - name: "lan-k3s-load-balancer"
-              tags: tdz
               id: 502
               ram: 1024
               cores: 1
@@ -59,7 +44,6 @@
                   bridge: "lan.10"
                   ipv4: "10.1.1.49/24"
             - name: "lan-k3s-server-00"
-              tags: tdz
               id: 503
               ram: 2048
               cores: 2
@@ -73,7 +57,6 @@
                   bridge: "lan.10"
                   ipv4: "10.1.1.50/24"
             - name: "lan-k3s-server-01"
-              tags: tdz
               id: 504
               ram: 2048
               cores: 2
@@ -87,7 +70,6 @@
                   bridge: "lan.10"
                   ipv4: "10.1.1.51/24"
             - name: "lan-k3s-00"
-              tags: tdz
               id: 505
               ram: 1024
               cores: 1
@@ -101,7 +83,6 @@
                   bridge: "lan.10"
                   ipv4: "10.1.1.60/24"
             - name: "lan-k3s-01"
-              tags: tdz
               id: 506
               ram: 1024
               cores: 1
@@ -115,7 +96,6 @@
                   bridge: "lan.10"
                   ipv4: "10.1.1.61/24"
             - name: "lan-k3s-02"
-              tags: tdz
               id: 507
               ram: 1024
               cores: 1
@@ -154,22 +134,3 @@
                   name: "eth2"
                   bridge: "lan"
                   macaddr: ""
-
-- name: load disk to proxmox
-  hosts: proxmox
-  vars:
-    gate_id: 500
-  tasks:
-    - name: copy disk to proxmox
-      ansible.builtin.copy:
-        src: "{{ playbook_dir }}/files/fortigate-v4.6.6.qcow2"
-        dest: "/tmp/fortigate.qcow2"
-    - name: attach disk to fortigate
-      command: "qm importdisk {{ gate_id }} /tmp/fortigate.qcow2 local --target-disk scsi1"
-    - name: change boot order
-      command: "qm set {{ gate_id }} --boot order=scsi1"
-    - name: stop gate
-      command: "qm stop {{ gate_id }}"
-    - name: start gate
-      command: "qm start {{ gate_id }}"
-

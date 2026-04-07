@@ -1,73 +1,132 @@
-- name: Configure IPSec VPN Phase 1 (IKE)
-  fortinet.fortios.fortios_system_vpn_ipsec_phase1_interface:
-    host: "{{ fortigate_host }}"
-    username: "{{ fortigate_username }}"
-    password: "{{ fortigate_password }}"
-    vdom: "root"
-    state: "present"
-    system_vpn_ipsec_phase1_interface:
-      name: "{{ vpn_name }}"
-      interface: "port1"
-      remote_gateway: "static"
-      gateway: "{{ vpn_remote_ip }}"
-      psksecret: "{{ psk }}"
-      mode: "main"
-      proposal: "aes256-sha256"
-      netbios: "disable"
-      dhgrp: "20"
+# -------------------------------------------------------
+# 1. Pool d'adresses IP attribuées aux clients (mode-config)
+# -------------------------------------------------------
+- name: Créer le pool d'IP pour les clients IPsec
+  fortios_firewall_address:
+    vdom: "{{ vdom }}"
+    state: present
+    firewall_address:
+      name: "{{ vpn_pool_name }}"
+      type: iprange
+      start_ip: "{{ vpn_pool_start }}"
+      end_ip: "{{ vpn_pool_end }}"
 
-- name: Configure IPSec VPN Phase 2 (IPSec)
-  fortinet.fortios.fortios_system_vpn_ipsec_phase2_interface:
-    host: "{{ fortigate_host }}"
-    username: "{{ fortigate_username }}"
-    password: "{{ fortigate_password }}"
-    vdom: "root"
-    state: "present"
-    system_vpn_ipsec_phase2_interface:
-      name: "{{ vpn_name }}-phase2"
-      phase1name: "{{ vpn_name }}"
-      proposal: "aes256-sha256"
-      pfs: "disable"
-      replay: "enable"
+# -------------------------------------------------------
+# 2. Phase 1 — IKEv2, PSK, FQDN IDs, mode-config ON
+# -------------------------------------------------------
+- name: Configurer Phase 1 IKEv2
+  fortios_vpn_ipsec_phase1_interface:
+    vdom: "{{ vdom }}"
+    state: present
+    vpn_ipsec_phase1_interface:
+      name: "{{ phase1_name }}"
+      type: dynamic           # remote-access / roadwarrior
+      interface: port1
+      ike_version: "2"
+      authmethod: psk
+      psksecret: "{{ psk_secret }}"
+
+      # IDs FQDN pour matcher la config strongSwan
+      localid: "{{ fg_fqdn }}"
+      localid_type: fqdn
+#      peerid: "{{ client_fqdn }}"
+      peertype: any           # un seul peer identifié par FQDN : one
+      # Si tu veux accepter n'importe quel peer avec le bon PSK :
+      # peertype: any
+
+      # Mode-config : le FG attribue une IP au client (vips = 0.0.0.0)
+      mode_cfg: enable
+      ipv4_start_ip: "{{ vpn_pool_start }}"
+      ipv4_end_ip: "{{ vpn_pool_end }}"
+      ipv4_netmask: "{{ vpn_pool_mask }}"
+
+      # Split DNS optionnel
+      # ipv4_dns_server1: "10.0.1.1"
+
+      # Proposals IKE — compatibles strongSwan défauts
+      proposal: "aes256-sha512"
+      dhgrp: "21"
+      keylife: 86400
+
+      dpd: on-idle
+      dpd_retrycount: 3
+      dpd_retryinterval: 20
+
+      nattraversal: enable
+
+# -------------------------------------------------------
+# 3. Phase 2 — subnets = remote_ts du côté strongSwan
+# -------------------------------------------------------
+- name: Configurer Phase 2
+  fortios_vpn_ipsec_phase2_interface:
+    vdom: "{{ vdom }}"
+    state: present
+    vpn_ipsec_phase2_interface:
+      name: "{{ phase2_name }}-{{ item.name }}"
+      phase1name: "{{ phase1_name }}"
+      proposal: "aes256-sha512"
+      pfs: enable
+      dhgrp: "21"
+      keylife_type: seconds
       keylifeseconds: 3600
-      local_subnet: "{{ vpn_local_ip }}/24"  # Local network (your private network)
-      remote_subnet: "0.0.0.0/0"  # Allow any remote subnet (client-to-site)
-
-- name: Enable IPSec VPN on the FortiGate
-  fortinet.fortios.fortios_system_vpn_ipsec:
-    host: "{{ fortigate_host }}"
-    username: "{{ fortigate_username }}"
-    password: "{{ fortigate_password }}"
-    vdom: "root"
-    state: "present"
-    system_vpn_ipsec:
-      name: "{{ vpn_name }}"
-      interface: "port1"
-      status: "enable"
-
-- name: Allow traffic from VPN clients in the firewall policy
-  fortinet.fortios.fortios_firewall_policy:
-    host: "{{ fortigate_host }}"
-    username: "{{ fortigate_username }}"
-    password: "{{ fortigate_password }}"
-    vdom: "root"
-    state: "present"
-    firewall_policy:
-      name: "Allow VPN Traffic"
-      srcintf:
-        - name: "{{ vpn_name }}"
-      dstintf:
-        - name: "{{ item }}"
-      action: "accept"
-      srcaddr:
-        - name: "all"
-      dstaddr:
-        - name: "all"
-      schedule: "always"
-      service: "ALL"
-      logtraffic: "all"
-      nat: "disable"
+      # Côté FortiGate (local) = les subnets LAN
+      src_addr_type: subnet
+      src_start_ip: "{{ item.src_addr }}"
+      src_end_ip: "255.255.255.0"
+      # Côté client (remote) = l'IP assignée dynamiquement
+      dst_addr_type: subnet
+      dst_start_ip: "0.0.0.0"
+      dst_end_ip: "0.0.0.0"
   loop:
-    - "dmz-in"
-    - "dmz-out"
-    - "lan-web"
+    - name: "dmz-in"
+      src_addr: "10.0.1.0"
+    - name: "dmz-out"
+      src_addr: "10.0.2.0"
+    - name: "lan-web"
+      src_addr: "10.1.1.0"
+
+## -------------------------------------------------------
+## 4. Interface tunnel — nécessaire pour les politiques FW
+## -------------------------------------------------------
+#- name: Rendre l'interface tunnel routable
+#  fortios_system_interface:
+#    vdom: "{{ vdom }}"
+#    state: present
+#    system_interface:
+#      name: "{{ phase1_name }}"
+#      type: tunnel
+#      ip: "10.0.3.254 255.255.255.0"  # IP locale du tunnel FG
+#      remote_ip: "10.0.3.1"
+#      allowaccess: ping
+
+# -------------------------------------------------------
+# 5. Politique firewall : clients VPN → LANs
+# -------------------------------------------------------
+- name: Politique firewall VPN → LAN
+  fortios_firewall_policy:
+    vdom: "{{ vdom }}"
+    state: present
+    firewall_policy:
+      policyid: "{{ item.id }}"
+      name: "trusted-host-access-{{ item.name }}"
+      srcintf:
+        - name: "{{ phase1_name }}"
+      dstintf:
+        - name: "{{ item.name }}"
+      srcaddr:
+        - name: all
+      dstaddr:
+        - name: all
+      action: accept
+      schedule: always
+      service:
+        - name: ALL
+      logtraffic: all
+      nat: disable
+  loop:
+    - name: "dmz-in"
+      id: 5
+    - name: "dmz-out"
+      id: 6
+    - name: "lan-web"
+      id: 7

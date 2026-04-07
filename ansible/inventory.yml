@@ -42,5 +42,5 @@ all:
           ansible_httpapi_validate_certs: false
           ansible_user: "{{ lookup('ansible.builtin.env', 'FORTIGATE_USR') }}"
           ansible_password: "{{ lookup('ansible.builtin.env', 'FORTIGATE_PWD') }}"
-          ansible_httpapi_port: 443
+          ansible_httpapi_port: "{{ lookup('ansible.builtin.env', 'FORTIGATE_HTTPS_PORT') }}"
           vdom: "root"

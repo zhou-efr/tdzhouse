@@ -142,3 +142,6 @@
       id: 3
     - name: "lan-web"
       id: 4
+
+- name: setup vpn access
+  include_tasks: ipsec.yml

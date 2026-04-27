@@ -1,0 +1,74 @@
+services:
+  sablier:
+    image: sablierapp/sablier:1.10.1
+    container_name: sablier
+    command:
+      - start
+      - --provider.name=docker
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - traefik-net          # m  me r  seau que Traefik
+
+  traefik:
+    image: traefik:v3.6
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      # API & Dashboard (optionnel, d  sactivez en prod)
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+
+      # Provider Docker
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+
+      # Provider fichier (pour le service externe)
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
+
+      # Entrypoints
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+
+      # Let's Encrypt (ACME) HTTP challenge
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=ovh"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53"
+      - "--certificatesresolvers.letsencrypt.acme.email=zkillian@fortinet.com"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+
+      # Redirection HTTP  HTTPS globale
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+
+      # Logs
+      - "--log.level=INFO"
+      - "--accesslog=true"
+
+      # Plugin
+      - "--experimental.plugins.sablier.moduleName=github.com/sablierapp/sablier"
+      - "--experimental.plugins.sablier.version=v1.10.1"
+
+    environment:
+      # Credentials OVH renseigner ou externaliser dans un .env
+      - OVH_ENDPOINT=ovh-eu
+      - OVH_APPLICATION_KEY=${OVH_APPLICATION_KEY}
+      - OVH_APPLICATION_SECRET=${OVH_APPLICATION_SECRET}
+      - OVH_CONSUMER_KEY=${OVH_CONSUMER_KEY}
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+      - "./dynamic:/etc/traefik/dynamic:ro"
+
+    networks:
+      - traefik-net
+
+networks:
+  traefik-net:
+    external: false

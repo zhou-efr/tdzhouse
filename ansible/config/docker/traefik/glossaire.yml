@@ -1,0 +1,40 @@
+# Traefik configuration pour le glossaire - ici bookstack
+
+http:
+  routers:
+    glossaire:
+      rule: "Host(`glossaire.testlab.tdz.ovh`)"
+      entryPoints:
+        - websecure
+      service: glossaire-backend
+      middlewares:
+        - glossaire-headers
+        - glossaire-sablier        # ajout
+      tls:
+        certResolver: letsencrypt
+
+  middlewares:
+    glossaire-headers:
+      headers:
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+        hostsProxyHeaders:
+          - "X-Forwarded-Host"
+
+    glossaire-sablier:             #  nouveau middleware
+      plugin:
+        sablier:
+          names: "bookstack"       # nom du conteneur Docker veiller
+          sablierUrl: "http://sablier:10000"
+          sessionDuration: "1m"
+          dynamic:
+            displayName: "Glossaire"
+            theme: "ghost"
+            refreshFrequency: "5s"
+
+  services:
+    glossaire-backend:
+      loadBalancer:
+        servers:
+          - url: "http://bookstack:6875"
+        passHostHeader: true

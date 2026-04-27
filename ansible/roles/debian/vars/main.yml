@@ -1,3 +1,4 @@
 target_user: "{{ lookup('ansible.builtin.env', 'GENERIC_USER') }}"
 target_home: "/home/{{ target_user }}"
 zsh_custom: "{{ target_home }}/.oh-my-zsh/custom"
+proxy_url: "{{ lookup('ansible.builtin.env', 'PROXY_URL') }}"

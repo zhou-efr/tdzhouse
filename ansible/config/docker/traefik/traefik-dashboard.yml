@@ -1,0 +1,28 @@
+# Traefik configuration pour le dashboard traefik
+
+http:
+  routers:
+    glossaire:
+      rule: "Host(`traefik.testlab.tdz.ovh`)"
+      entryPoints:
+        - websecure
+      service: dashboard-backend
+      middlewares:
+        - dashboard-headers
+      tls:
+        certResolver: letsencrypt
+
+  middlewares:
+    dashboard-headers:
+      headers:
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+        hostsProxyHeaders:
+          - "X-Forwarded-Host"
+
+  services:
+    dashboard-backend:
+      loadBalancer:
+        servers:
+          - url: "http://traefik:8080"
+        passHostHeader: true

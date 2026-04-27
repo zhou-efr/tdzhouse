@@ -24,10 +24,10 @@
         owner: "{{ target_user }}"
         group: "{{ target_user }}"
 
-    - name: Download custom compose.yml
+    - name: Download custom traefik-compose.yml
       ansible.builtin.get_url:
         url: https://raw.githubusercontent.com/zhou-efr/tdzhouse/master/ansible/config/traefik/compose.yml
-        dest: "/opt/containers/traefik/compose.yml"
+        dest: "/opt/containers/traefik/traefik-compose.yml"
         mode: "0644"
         owner: "{{ target_user }}"
         group: "{{ target_user }}"
@@ -40,10 +40,10 @@
         owner: "{{ target_user }}"
         group: "{{ target_user }}"
 
-    - name: Download custom traefik.yml
+    - name: Download custom traefik-compose.yml.old
       ansible.builtin.get_url:
         url: https://raw.githubusercontent.com/zhou-efr/tdzhouse/master/ansible/config/traefik/traefik.yml
-        dest: "/opt/containers/traefik/traefik.yml"
+        dest: "/opt/containers/traefik/traefik-compose.yml.old"
         mode: "0644"
         owner: "{{ target_user }}"
         group: "{{ target_user }}"
@@ -53,5 +53,5 @@
       community.docker.docker_compose_v2:
         project_src: /opt/containers/traefik
         files:
-          - compose.yml
+          - traefik-compose.yml
         state: present

@@ -1,0 +1,2 @@
+proxy_url: "{{ lookup('ansible.builtin.env', 'PROXY_URL') }}"
+no_proxy_list: "localhost,127.0.0.1"

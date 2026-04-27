@@ -15,3 +15,5 @@ fortios.qcow2
 /terraform/terraform.tfstate
 /terraform/terraform.tfstate.backup
 /venv/
+/ansible/files/debian-13-nocloud-amd64.qcow2
+/ansible/temp.yml

@@ -17,3 +17,4 @@ fortios.qcow2
 /venv/
 /ansible/files/debian-13-nocloud-amd64.qcow2
 /ansible/temp.yml
+/error.txt

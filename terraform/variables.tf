@@ -32,6 +32,7 @@ variable "lxc" {
     cores    = number
     os       = string
     pool     = string
+    tags     = string
     root_disk    = list(object({
       size   = string
       storage  = string
@@ -40,6 +41,8 @@ variable "lxc" {
       name = string
       bridge   = string
       ipv4  = string
+      tag   = string
+      gw    = string
     }))
   }))
 }
@@ -54,6 +57,7 @@ variable "vms" {
     sockets     = number   # Number of CPU sockets
     os          = string   # OS template to clone from
     vm_state    = string
+    tags        = string
     disks        = list(object({
       size       = string   # Disk size (e.g., 10G)
       storage    = string   # Storage location (e.g., local-lvm)
@@ -64,6 +68,7 @@ variable "vms" {
       name       = string   # Network interface name (e.g., eth0)
       bridge     = string   # Bridge (e.g., vmbr0)
       macaddr    = string   # Mac adresse
+      tag        = string
     }))
   }))
 }

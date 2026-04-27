@@ -26,12 +26,14 @@ resource "proxmox_lxc" "lxc_instances" {
   cores = var.lxc[count.index].cores
   memory = var.lxc[count.index].ram
   pool = var.lxc[count.index].pool
+  tags = var.vms[count.index].tags
   nameserver = "1.1.1.1"
   unprivileged = true
 
   ssh_public_keys = <<-EOT
-    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPBfQOXHJNhLYqyF9YIbOJdCvdNCIC2+aN9H7uyLY50x
-    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDBHovtHE37E3kGaY6NNxdFKm5UBg0EOgXfOMjL8I37E
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPBfQOXHJNhLYqyF9YIbOJdCvdNCIC2+aN9H7uyLY50x
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDBHovtHE37E3kGaY6NNxdFKm5UBg0EOgXfOMjL8I37E
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL6Cg91yjrIRXcytm3pFIXPOPat9I6SF+8MBsRlqCR0A
   EOT
 
   rootfs {
@@ -45,7 +47,9 @@ resource "proxmox_lxc" "lxc_instances" {
       name   = network.value.name
       bridge = network.value.bridge
       ip     = network.value.ipv4
-      ip6    = "dhcp"
+      ip6    = "static"
+      tag    = try(tonumber(network.value.tag), 0)
+      gw  = network.value.gw
     }
   }
 }
@@ -57,13 +61,16 @@ resource "proxmox_vm_qemu" "instances" {
   target_node = var.proxmox_node
   name        = var.vms[count.index].name
   vmid        = var.vms[count.index].id
-  # vm_state    = var.vms[count.index].vm_state
+  tags        = var.vms[count.index].tags
+  vm_state    = var.vms[count.index].vm_state
   # clone       = var.vms[count.index].os
 
   # Ressources
   memory      = var.vms[count.index].ram
-  sockets     = var.vms[count.index].sockets
-  cores       = var.vms[count.index].cores
+  cpu {
+    sockets     = var.vms[count.index].sockets
+    cores       = var.vms[count.index].cores
+  }
 
   # Behaviour
   boot        = "order=scsi0"
@@ -88,8 +95,10 @@ resource "proxmox_vm_qemu" "instances" {
     content {
       id     = network.value.id
       bridge = network.value.bridge
+      tag    = try(tonumber(network.value.tag), 0)
       model  = "virtio"
       firewall = true
+      macaddr = network.value.macaddr
     }
   }
 }

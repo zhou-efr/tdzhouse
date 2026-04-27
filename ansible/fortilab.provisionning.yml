@@ -63,3 +63,4 @@
   roles:
     - proxy-usr
     - debian
+    - docker-server

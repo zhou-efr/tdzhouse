@@ -34,7 +34,7 @@ services:
       # Let's Encrypt (ACME) HTTP challenge
       - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
       - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=ovh"
-      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=10.1.1.1:53"
       - "--certificatesresolvers.letsencrypt.acme.email=zkillian@fortinet.com"
       - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
 
@@ -53,9 +53,9 @@ services:
     environment:
       # Credentials OVH renseigner ou externaliser dans un .env
       - OVH_ENDPOINT=ovh-eu
-      - OVH_APPLICATION_KEY=${OVH_APPLICATION_KEY}
-      - OVH_APPLICATION_SECRET=${OVH_APPLICATION_SECRET}
-      - OVH_CONSUMER_KEY=${OVH_CONSUMER_KEY}
+      - OVH_APPLICATION_KEY="{{ OVH_APPLICATION_KEY }}"
+      - OVH_APPLICATION_SECRET="{{ OVH_APPLICATION_SECRET }}"
+      - OVH_CONSUMER_KEY="{{ OVH_CONSUMER_KEY }}"
 
     ports:
       - "80:80"

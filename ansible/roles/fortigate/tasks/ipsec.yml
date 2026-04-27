@@ -53,6 +53,8 @@
       dpd_retryinterval: 20
 
       nattraversal: enable
+      transport: "udp"
+      ipv4_split_include: "internal-addrs"
 
 # -------------------------------------------------------
 # 3. Phase 2 — subnets = remote_ts du côté strongSwan
@@ -62,7 +64,7 @@
     vdom: "{{ vdom }}"
     state: present
     vpn_ipsec_phase2_interface:
-      name: "{{ phase2_name }}-{{ item.name }}"
+      name: "{{ phase2_name }}"
       phase1name: "{{ phase1_name }}"
       proposal: "aes256-sha512"
       pfs: enable
@@ -70,20 +72,24 @@
       keylife_type: seconds
       keylifeseconds: 3600
       # Côté FortiGate (local) = les subnets LAN
-      src_addr_type: subnet
-      src_start_ip: "{{ item.src_addr }}"
-      src_end_ip: "255.255.255.0"
+#      src_addr_type: subnet
+#      src_start_ip: "{{ item.src_addr }}"
+#      src_end_ip: "255.0.0.0"
+      src_addr_type: name
+      src_name: "internal-addrs"
       # Côté client (remote) = l'IP assignée dynamiquement
-      dst_addr_type: subnet
-      dst_start_ip: "0.0.0.0"
-      dst_end_ip: "0.0.0.0"
-  loop:
-    - name: "dmz-in"
-      src_addr: "10.0.1.0"
-    - name: "dmz-out"
-      src_addr: "10.0.2.0"
-    - name: "lan-web"
-      src_addr: "10.1.1.0"
+#      dst_addr_type: subnet
+#      dst_start_ip: "0.0.0.0"
+#      dst_end_ip: "0.0.0.0"
+      dst_addr_type: name
+      dst_name: "all"
+#  loop:
+#    - name: "dmz-in"
+#      src_addr: "10.0.1.0"
+#    - name: "dmz-out"
+#      src_addr: "10.0.2.0"
+#    - name: "lan-web"
+#      src_addr: "10.1.1.0"
 
 ## -------------------------------------------------------
 ## 4. Interface tunnel — nécessaire pour les politiques FW
@@ -107,16 +113,16 @@
     vdom: "{{ vdom }}"
     state: present
     firewall_policy:
-      policyid: "{{ item.id }}"
-      name: "trusted-host-access-{{ item.name }}"
+      policyid: "20{{ index }}"
+      name: "VPN-to-{{ item }}"
       srcintf:
         - name: "{{ phase1_name }}"
       dstintf:
-        - name: "{{ item.name }}"
+        - name: "{{ item }}"
       srcaddr:
-        - name: all
+        - name: "vpn-acc-addrs"
       dstaddr:
-        - name: all
+        - name: "{{ item }}-addrs"
       action: accept
       schedule: always
       service:
@@ -124,9 +130,9 @@
       logtraffic: all
       nat: disable
   loop:
-    - name: "dmz-in"
-      id: 5
-    - name: "dmz-out"
-      id: 6
-    - name: "lan-web"
-      id: 7
+    - "dmz-in"
+    - "dmz-out"
+    - "lan-web"
+  loop_control:
+    index_var: index
+

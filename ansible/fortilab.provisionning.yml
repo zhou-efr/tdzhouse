@@ -1,7 +1,65 @@
 - name : Provisionning core fortigate
   hosts : core-fortigate
   gather_facts: false
+  vars:
+    ansible_connection: httpapi
+    ansible_network_os: fortinet.fortios.fortios
+    ansible_httpapi_use_ssl: true
+    ansible_httpapi_validate_certs: false
+    ansible_user: "{{ lookup('ansible.builtin.env', 'FORTIGATE_USR') }}"
+    ansible_password: "{{ lookup('ansible.builtin.env', 'FORTIGATE_PWD') }}"
+    ansible_httpapi_port: "{{ lookup('ansible.builtin.env', 'FORTIGATE_HTTPS_PORT') }}"
   collections:
     - fortinet.fortios
   roles:
     - fortigate
+
+- name: Check if VPN is up
+  hosts: localhost
+  gather_facts: no
+  any_errors_fatal: true
+  tasks:
+    - name: Ping internal ip
+      ansible.builtin.command: ping -c 1 10.1.1.1
+      register: ping_result
+      failed_when: ping_result.rc != 0
+
+- name: start machines
+  hosts: localhost
+  tasks:
+    - name: Start vm
+      community.proxmox.proxmox_kvm:
+        api_user: "{{ lookup('ansible.builtin.env', 'PROXMOX_USER') }}"
+        api_token_id: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_ID') }}"
+        api_token_secret: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_SECRET') }}"
+        api_host: "{{ lookup('ansible.builtin.env', 'PROXMOX_HOST') }}"
+        node: "{{ lookup('ansible.builtin.env', 'TF_VAR_proxmox_node') }}"
+        vmid: "{{ item }}"
+        state: started
+      loop:
+        - 502
+    - name: Start containers
+      community.proxmox.proxmox:
+        api_user: "{{ lookup('ansible.builtin.env', 'PROXMOX_USER') }}"
+        api_token_id: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_ID') }}"
+        api_token_secret: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_SECRET') }}"
+        api_host: "{{ lookup('ansible.builtin.env', 'PROXMOX_HOST') }}"
+        node: "{{ lookup('ansible.builtin.env', 'TF_VAR_proxmox_node') }}"
+        vmid: "{{ item }}"
+        state: started
+      loop:
+        - 501
+
+- name: setup proxy
+  hosts: dmz-proxy
+  vars:
+    is_proxy_server: yes
+  roles:
+    - debian
+    - tinyproxy
+
+- name: setup docker
+  hosts: lan-docker
+  roles:
+    - proxy-usr
+    - debian

@@ -1,7 +1,3 @@
-- name: Env var loading validation
-  ansible.builtin.debug:
-    msg: "{{ fortigate_token }}"
-
 - name: Interface wan
   fortinet.fortios.fortios_system_interface:
     vdom: "root"
@@ -9,26 +5,35 @@
     system_interface:
       name: "port1"
       alias: "wan"
+      role: "wan"
+      allowaccess:
+        - "ssh"
+        - "https"
 
 - name: Configure internal interfaces
   fortinet.fortios.fortios_system_interface:
     vdom: "root"
     state: "present"
-    access_token: "{{ fortigate_token }}"
+    access_token: "{{ fortigate_token  }}"
     system_interface:
       name: "{{ item.port }}"
       alias: "{{ item.alias }}"
       mode: "static"
       ip: "{{ item.subnet }}"
+      role: "{{ item.role }}"
+      allowaccess:
+        - "https"
+        - "ssh"
+        - "ping"
   loop:
-    - { port: "port2", alias: "dmz", subnet: "10.0.0.1/24" }
-    - { port: "port3", alias: "lan", subnet: "10.1.0.1/24" }
+    - { port: "port2", role: "dmz", alias: "dmz", subnet: "10.0.0.1/24" }
+    - { port: "port3", role: "lan", alias: "lan", subnet: "10.1.0.1/24" }
 
 - name: Ajouter vlans
   fortinet.fortios.fortios_system_interface:
     vdom: "root"
     state: "present"
-    access_token: "{{ fortigate_token }}"
+    access_token: "{{ fortigate_token  }}"
     system_interface:
       vdom: "root"
       name: "{{ item.name }}"
@@ -37,16 +42,53 @@
       interface: "{{ item.port }}"
       mode: "static"
       ip: "{{ item.subnet }}"
+      role: "{{ item.role }}"
+      allowaccess: "ping"
   loop:
-    - { name: 'dmz-in', port: 'port2', vlanid: 10, subnet: '10.0.1.1 255.255.255.0' }
-    - { name: 'dmz-out', port: 'port2', vlanid: 20, subnet: '10.0.2.1 255.255.255.0' }
-    - { name: 'lan-web', port: 'port3', vlanid: 10, subnet: '10.1.1.1 255.255.255.0' }
+    - { name: 'dmz-in', port: 'port2', role: "dmz", vlanid: 10, subnet: '10.0.1.1 255.255.255.0' }
+    - { name: 'dmz-out', port: 'port2', role: "dmz", vlanid: 20, subnet: '10.0.2.1 255.255.255.0' }
+    - { name: 'lan-web', port: 'port3', role: "lan", vlanid: 10, subnet: '10.1.1.1 255.255.255.0' }
+
+- name: Configure DHCP server on VLAN
+  fortios_system_dhcp_server:
+    vdom: "root"
+    state: "present"
+    access_token: "{{ fortigate_token  }}"
+    system_dhcp_server:
+      id: "{{ item.id }}"
+      status: "enable"
+      interface: "{{ item.name }}"
+      lease_time: 86400
+      default_gateway: "{{ item.gw }}"
+      netmask: "255.255.255.0"
+      ip_range:
+        - id: 1
+          start_ip: "{{ item.base }}.100"
+          end_ip: "{{ item.base }}.150"
+      dns_service: "local"
+      dns_server1: "{{ item.gw }}"
+  loop:
+    - { id: 12, name: 'lan-web', gw: '10.1.1.1', base: '10.1.1' }
+
+- name: Créer une réservation DHCP (IP fixe par MAC)
+  fortios_system_dhcp_server:
+    vdom: "{{ vdom }}"
+    state: "present"
+    access_token: "{{ fortigate_token  }}"
+    system_dhcp_server:
+      id: 12                          # ID du serveur DHCP lan-web
+      reserved_address:
+        - id: 1
+          mac: "BC:24:11:AF:9C:B3"   # Adresse MAC du client
+          ip: "10.1.1.50"          # IP à réserver
+          description: "lan-docker"
+          action: "reserved"            # assign | block | reserved
 
 - name: Setup aliases
   fortinet.fortios.fortios_firewall_address:
     vdom: "root"
     state: "present"
-    access_token: "{{ fortigate_token }}"
+    access_token: "{{ fortigate_token  }}"
     firewall_address:
       name: "{{ item.name }}"
       type: "ipmask"
@@ -54,20 +96,19 @@
   loop:
     - { name: 'reverse-proxy', subnet: "10.0.1.50/32" }
     - { name: 'proxy', subnet: "10.0.2.50/32" }
-    - { name: 'k3s-ingress', subnet: "10.1.1.50/32" }
-    - { name: 'k3s-server-00', subnet: "10.1.1.60/32" }
-    - { name: 'k3s-server-01', subnet: "10.1.1.61/32" }
-    - { name: 'k3s-node-00', subnet: "10.1.1.70/32" }
-    - { name: 'k3s-node-01', subnet: "10.1.1.71/32" }
-    - { name: 'k3s-node-02', subnet: "10.1.1.72/32" }
+    - { name: 'lan-docker', subnet: "10.1.1.50/32" }
     - { name: 'l-appart', subnet: "176.187.69.6/32" }
     - { name: 'tour-alto', subnet: "84.14.248.10/32" }
+    - { name: 'lan-web-addrs', subnet: "10.1.1.0/24" }
+    - { name: 'dmz-in-addrs', subnet: "10.0.1.0/24" }
+    - { name: 'dmz-out-addrs', subnet: "10.0.2.0/24" }
+    - { name: 'vpn-acc-addrs', subnet: "10.0.3.0/24" }
 
 - name: Create groups
   fortinet.fortios.fortios_firewall_addrgrp:
     vdom: "root"
     state: "present"
-    access_token: "{{ fortigate_token }}"
+    access_token: "{{ fortigate_token  }}"
     firewall_addrgrp:
       name: "{{ item.name }}"
       member: "{{ item.members }}"
@@ -76,21 +117,17 @@
       members:
         - name: "l-appart"
         - name: "tour-alto"
-    - name: "k3s-servers"
+    - name: "internal-addrs"
       members:
-        - name: "k3s-server-00"
-        - name: "k3s-server-01"
-    - name: "k3s-nodes"
-      members:
-        - name: "k3s-node-00"
-        - name: "k3s-node-01"
-        - name: "k3s-node-02"
+        - name: "lan-web-addrs"
+        - name: "dmz-in-addrs"
+        - name: "dmz-out-addrs"
 
 - name: Policy proxy to internet
   fortinet.fortios.fortios_firewall_policy:
     vdom: "root"
     state: "present"
-    access_token: "{{ fortigate_token }}"
+    access_token: "{{ fortigate_token  }}"
     firewall_policy:
       policyid: 1
       name: "proxy to internet"
@@ -106,42 +143,40 @@
         - name: "HTTP"
         - name: "HTTPS"
         - name: "FTP"
+        - name: "DNS"
       schedule: "always"
       action: "accept"
       nat: "enable"
       logtraffic: "all"
 
-- name: trusted-hosts to all
+- name: all to proxy
   fortinet.fortios.fortios_firewall_policy:
     vdom: "root"
     state: "present"
-    access_token: "{{ fortigate_token }}"
+    access_token: "{{ fortigate_token  }}"
     firewall_policy:
-      policyid: "{{ item.id }}"
-      name: "trusted-hosts to {{ item.name }}"
+      policyid: "10{{ index }}"
+      name: "{{ item }} to proxy"
       srcintf:
-        - name: "port1"
+        - name: "{{ item }}"
       dstintf:
-        - name: "{{ item.name }}"
+        - name: "dmz-out"
       srcaddr:
-        - name: "trusted-hosts"
+        - name: "{{ item }}-addrs"
       dstaddr:
-        - name: "all"
+        - name: "proxy"
       service:
         - name: "HTTP"
-        - name: "HTTPS"
-        - name: "SSH"
       schedule: "always"
       action: "accept"
       nat: "enable"
       logtraffic: "all"
   loop:
-    - name: "dmz-in"
-      id: 2
-    - name: "dmz-out"
-      id: 3
-    - name: "lan-web"
-      id: 4
+    - "dmz-in"
+    - "dmz-out"
+    - "lan-web"
+  loop_control:
+    index_var: index
 
 - name: setup vpn access
   include_tasks: ipsec.yml

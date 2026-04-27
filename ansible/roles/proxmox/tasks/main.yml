@@ -78,25 +78,11 @@
     node: "{{ proxmox_node }}"
     state: apply
 
-- name: Create dmz pool
+- name: Create tdz pool
   community.proxmox.proxmox_pool:
     api_host: "{{ proxmox_host }}"
     api_user: "{{ proxmox_user }}"
     api_token_id: "{{ proxmox_token_id }}"
     api_token_secret: "{{ proxmox_token_secret }}"
-    poolid: tdz-dmz
-    comment: 'Machines tdz de DMZ'
-
-- name: Create lan pool
-  community.proxmox.proxmox_pool:
-    api_host: "{{ proxmox_host }}"
-    api_user: "{{ proxmox_user }}"
-    api_token_id: "{{ proxmox_token_id }}"
-    api_token_secret: "{{ proxmox_token_secret }}"
-    poolid: tdz-lan
-    comment: 'Machines tdz internes'
-
-- name: Import Debian ct template
-  ansible.builtin.get_url:
-    url: http://download.proxmox.com/images/system/debian-13-standard_13.1-2_amd64.tar.zst
-    dest: /var/lib/vz/template/cache/debian-13-standard_13.1-2_amd64.tar.zst
+    poolid: tdz
+    comment: 'Machines tdz '

@@ -1,0 +1,32 @@
+- name: Configure interfaces
+  fortinet.fortios.fortios_system_interface:
+    state: "present"
+    access_token: "{{ admin_api_token  }}"
+    system_interface:
+      vdom: "root"
+      name: "port{{ item.id+1 }}"
+      alias: "{{ item.name }}"
+      mode: "static"
+      ip: "{{ item.ipv4 }} {{ item.mask }}"
+      role: "{{ item.role }}"
+      allowaccess: "{{ item.allow_access }}"
+  loop: "{{ networks }}"
+  throttle: 1
+
+- name: Configure VLAN interfaces
+  fortinet.fortios.fortios_system_interface:
+    state: "present"
+    access_token: "{{ admin_api_token }}"
+    system_interface:
+      vdom: "root"
+      name: "{{ item.1.name }}"
+      interface: "port{{ item.0.id + 1 }}"
+      vlanid: "{{ item.1.tag }}"
+      type: "vlan"
+      mode: "static"
+      ip: "{{ item.1.ipv4 }} {{ item.1.mask }}"
+      role: "{{ item.1.role }}"
+      allowaccess: "{{ item.1.allow_access }}"
+  loop: "{{ networks | subelements('vlans', skip_missing=True) }}"
+  when: item.1 is defined
+  throttle: 1

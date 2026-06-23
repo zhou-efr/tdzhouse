@@ -1,0 +1,22 @@
+- name: check if sub tasks works
+  ansible.builtin.debug:
+    msg: Subtask
+
+
+- name: Configure interfaces
+  vars_files:
+    - "{{ playbook_dir }}/vars/configuration.yml"
+  fortinet.fortios.fortios_system_interface:
+    vdom: "root"
+    state: "present"
+    access_token: "{{ admin_api_token  }}"
+    system_interface:
+      name: "item.name"
+      interface: "port{{ network.id+1 }}"
+      mode: "static"
+      ip: "{{ item.ipv4 }} {{ item.mask }}"
+      role: "{{ item.role }}"
+      allowaccess: "{{ item.allow_access }}"
+      gateway: "{{ (item.gateway if item.gateway != '' else '') }}"
+  loop: "{{ networks | subelements('vlans', skip_missing=True) }}"
+  when: item.1 is defined

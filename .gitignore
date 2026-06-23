@@ -18,3 +18,13 @@ fortios.qcow2
 /ansible/files/debian-13-nocloud-amd64.qcow2
 /ansible/temp.yml
 /error.txt
+/proxmoxquickdebian/.terraform.lock.hcl
+/proxmoxquickdebian/terraform.tfstate
+/proxmoxquickdebian/terraform.tfstate.backup
+/quickfortigate/src/vars/secret.pass
+/quickfortigate/src/vars/configuration.yml
+/quickfortigate/src/vars/inventory.yml
+/proxmoxquickdebian/vars/configuration.yml
+/proxmoxquickdebian/vars/inventory.yml
+/proxmoxquickdebian/vars/secret.pass
+/proxmoxquickdebian/.terraform/

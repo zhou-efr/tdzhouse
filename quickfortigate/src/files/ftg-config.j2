@@ -1,0 +1,49 @@
+config system interface
+    edit port{{ networks[0].id+1 }}
+        set mode static
+        set ip {{ networks[0].ipv4 }} {{ networks[0].mask }}
+        set allowaccess {{ networks[0].allow_access }}
+    next
+end
+
+config router static
+    edit 1
+        set gateway {{ networks[0].gateway }}
+        set device port{{ networks[0].id+1 }}
+        set dst 0.0.0.0 0.0.0.0
+    next
+end
+
+config system admin
+    edit admin
+        set password {{ admin_password }}
+        {% for host in admin_trusted_hosts %}
+        set trusthost{{ loop.index+1 }} {{ host }}
+        {% endfor %}
+    next
+end
+
+config system api-user
+    edit "api-admin"
+        set api-key {{ admin_api_token }}
+        set accprofile "super_admin"
+        set vdom "root"
+        config trusthost
+            {% for host in admin_trusted_hosts %}
+            edit {{ loop.index+1 }}
+                set ipv4-trusthost {{ host }}
+            next
+            {% endfor %}
+        end
+    next
+end
+
+config system global
+    set admin-sport {{ admin_https_port }}
+end
+
+config system global
+    set hostname {{ name }}
+end
+
+execute vm-license {{ ftg_licence }}

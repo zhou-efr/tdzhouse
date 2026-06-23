@@ -1,0 +1,10 @@
+all:
+  hosts:
+    ftg:
+      ansible_host: 51.77.188.227
+      ftg_token: 4UHZgzS6d55KMxV2pLrUgoHRSFgEWF
+      ftg_roles: ['interfaces-auto-setup', 'secure-web-gateway', 'ipsec-remote-access']
+      ansible_httpapi_use_ssl: true
+      ansible_httpapi_validate_certs: false
+      ansible_httpapi_port: 8006
+      ansible_network_os: fortinet.fortios.fortios

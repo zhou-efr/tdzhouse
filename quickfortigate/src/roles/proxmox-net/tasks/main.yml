@@ -1,0 +1,39 @@
+- name: Create Linux bridges
+  community.proxmox.proxmox_node_network:
+    api_host: "{{ proxmox_host }}"
+    api_user: "{{ proxmox_user }}"
+    api_token_id: "{{ proxmox_token_id }}"
+    api_token_secret: "{{ proxmox_token_secret }}"
+    node: "{{ proxmox_node }}"
+    iface: "{{ item.bridge }}"
+    iface_type: "bridge"
+    autostart: true
+    cidr: "{{ item.net_cidr }}"
+    state: present
+    bridge_vlan_aware: "{{ item.vlans | length > 0 }}"
+  loop: "{{ networks }}"
+  when: item.bridge != 'vmbr0'  # vmbr0 existe déjà et est géré par Proxmox
+
+- name: Create VLAN interfaces
+  community.proxmox.proxmox_node_network:
+    api_host: "{{ proxmox_host }}"
+    api_user: "{{ proxmox_user }}"
+    api_token_id: "{{ proxmox_token_id }}"
+    api_token_secret: "{{ proxmox_token_secret }}"
+    node: "{{ proxmox_node }}"
+    iface: "{{ item.0.bridge }}.{{ item.1.tag }}"
+    iface_type: "vlan"
+    autostart: true
+    cidr: "{{ item.1.net_cidr }}"
+    state: present
+  loop: "{{ networks | subelements('vlans', skip_missing=True) }}"
+  when: item.1 is defined
+
+- name: Apply network configuration
+  community.proxmox.proxmox_node_network:
+    api_host: "{{ proxmox_host }}"
+    api_user: "{{ proxmox_user }}"
+    api_token_id: "{{ proxmox_token_id }}"
+    api_token_secret: "{{ proxmox_token_secret }}"
+    node: "{{ proxmox_node }}"
+    state: apply

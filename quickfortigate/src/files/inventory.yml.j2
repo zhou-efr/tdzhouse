@@ -1,0 +1,10 @@
+all:
+  hosts:
+    ftg:
+      ansible_host: {{ ftg_api_address }}
+      ftg_token: {{ admin_api_token }}
+      ftg_roles: {{ roles }}
+      ansible_httpapi_use_ssl: true
+      ansible_httpapi_validate_certs: false
+      ansible_httpapi_port: {{ admin_https_port }}
+      ansible_network_os: fortinet.fortios.fortios

@@ -1,0 +1,161 @@
+- name: Create FortiGate cloud-init disk template on proxmox
+  hosts: proxmox
+  vars_files:
+    - "{{ playbook_dir }}/vars/configuration.yml"
+  tasks:
+    - name: Ensure correct cloud-init directory structure is present - content
+      ansible.builtin.file:
+        path: "/tmp/ftg-install/cloud-init/openstack/content/"
+        state: directory
+
+    - name: Ensure correct cloud-init directory structure is present - latest
+      ansible.builtin.file:
+        path: "/tmp/ftg-install/cloud-init/openstack/latest/"
+        state: directory
+
+    - name: Create Cloud-Init user_data using template
+      template:
+        src: "{{ playbook_dir }}/files/ftg-config.j2"
+        dest: "/tmp/ftg-install/cloud-init/openstack/latest/user_data"
+        force: yes
+
+    - name: Create iso image and store locally
+      ansible.builtin.command: "mkisofs -R -r -o /tmp/fgt-bootstrap.iso /tmp/ftg-install/cloud-init/"
+
+    - name: Create ISO Template in Proxmox
+      community.general.proxmox_template:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_token_id: "{{ proxmox_token_id }}"
+        api_token_secret: "{{ proxmox_token_secret }}"
+        node: "{{ proxmox_node }}"
+
+        src: "/tmp/fgt-bootstrap.iso"
+        content_type: "iso"
+        state: "present"
+        force: "true"
+
+- name: Setup proxmox networks
+  hosts: proxmox
+  vars_files:
+    - "{{ playbook_dir }}/vars/configuration.yml"
+  roles:
+    - "proxmox-net"
+
+- name: Create FortiGate VM
+  hosts: proxmox
+  vars_files:
+    - "{{ playbook_dir }}/vars/configuration.yml"
+  vars:
+      template_file_dest: "/var/lib/vz/template/iso/"
+  tasks:
+    - name: Copy FortiOS disk file
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/files/{{ disk_file }}"
+        dest: "/tmp/{{ disk_file }}"
+        mode: "0644"
+
+    - name: Build Proxmox network config
+      ansible.builtin.set_fact:
+        vm_networks: >-
+          {{
+            vm_networks | default({}) |
+            combine({
+              "net" ~ item.id: "virtio"
+                ~ (("=" ~ item.macaddr) if item.macaddr != '' else '')
+                ~ ",bridge=" ~ item.bridge
+            })
+          }}
+      loop: "{{ networks }}"
+
+    - name: debug
+      ansible.builtin.debug:
+        msg: "{{ vm_networks }}"
+
+    - name: Créer la VM {{ name }} (vmid {{ vmid }})
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
+      community.general.proxmox_kvm:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_token_id: "{{ proxmox_token_id }}"
+        api_token_secret: "{{ proxmox_token_secret }}"
+
+        node: "{{ proxmox_node }}"
+        vmid: "{{ vmid }}"
+        name: "{{ name }}"
+
+        tags: "{{ tags }}"
+
+        scsihw: "virtio-scsi-single"
+        scsi:
+          scsi1: "{{ log_disk.storage }}:{{ log_disk.size }}"
+
+        ide:
+          ide2: 'local:iso/fgt-bootstrap.iso,media=cdrom'
+
+        memory: "{{ ram }}"
+        cores: "{{ cores }}"
+        boot: "order=scsi0"
+
+        net: "{{ vm_networks }}"
+
+        agent: "enabled=1"
+        state: present
+
+    - name: Importer le disque qcow2 dans la VM
+      ansible.builtin.command:
+        cmd: >
+          qm importdisk {{ vmid }}
+          /tmp/{{ disk_file }}
+          {{ vm_storage }}
+          --format qcow2
+      register: import_result
+      changed_when: import_result.rc == 0
+
+    - name: Attacher le disque importé à la VM
+      ansible.builtin.command:
+        cmd: >
+          qm set {{ vmid }}
+          --scsi0 {{ vm_storage }}:vm-{{ vmid }}-disk-1,discard=on
+
+    - name: Restart vm
+      community.proxmox.proxmox_kvm:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_token_id: "{{ proxmox_token_id }}"
+        api_token_secret: "{{ proxmox_token_secret }}"
+
+        node: "{{ proxmox_node }}"
+        vmid: "{{ vmid }}"
+        state: started
+
+    - name: Sleep for 3 minutes and continue with play
+      ansible.builtin.wait_for:
+        timeout: 180
+
+    - name: Restart vm
+      community.proxmox.proxmox_kvm:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_token_id: "{{ proxmox_token_id }}"
+        api_token_secret: "{{ proxmox_token_secret }}"
+
+        node: "{{ proxmox_node }}"
+        vmid: "{{ vmid }}"
+        state: restarted
+
+- name: Create post-install inventory
+  hosts: localhost
+  vars_files:
+    - "{{ playbook_dir }}/vars/configuration.yml"
+  tasks:
+    - name: Create post-install inventory using template
+      template:
+        src: "{{ playbook_dir }}/files/inventory.yml.j2"
+        dest: "{{ playbook_dir }}/vars/temp_inventory.yml"
+        force: yes
+
+    - name: Sleep for 3 minutes to wait ftg to be up
+      ansible.builtin.wait_for:
+        timeout: 180

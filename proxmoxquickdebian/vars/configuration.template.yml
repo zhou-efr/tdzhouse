@@ -1,0 +1,42 @@
+vmid: 500
+name: "debian-13"
+cloud_init_file: "debian-13-genericcloud-amd64.qcow2"
+cloud_init_template_storage: "local-zfs"
+template_vmid: 8000
+
+authorized_keys:
+  - "ssh-ed25519 xxxx key-1780175118764"
+root_password: "strongpassword"
+user: "user"
+user_password: "strongpassword"
+
+sockets: 1
+cores: 4
+ram: 16384
+tags:
+  - "fortilab"
+
+disks:
+  - size: 64   # Disk size
+    storage: "local-zfs"   # Storage location (e.g., local-lvm)
+    slot: "scsi0"   # Disk slot
+    type: "ignore"  # disk if qcow file, ignore elseway
+
+networks:
+  - id: 0
+    name: "eth0"   # Network interface name (e.g., eth0)
+    bridge: "lan"    # Bridge (e.g., vmbr0)
+    macaddr: ""   # Mac adresse
+    tag: "10"     # VLAN tag
+    ip: "dhcp"    # IP for cloud-init
+#    gateway: "null"
+
+# ─────────────────────────────────────────────
+# Proxmox secrets
+# ─────────────────────────────────────────────
+
+proxmox_host: "proxmox.example.com"
+proxmox_user: "root@pam"
+proxmox_token_id: "token"
+proxmox_token_secret: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxx"
+proxmox_node: "xxxx"

@@ -1,0 +1,61 @@
+- name: Add DHCP server for main network if enabled
+  ansible.builtin.set_fact:
+    dhcp_servers: >-
+      {{
+        dhcp_servers | default([]) + [
+          {
+            'id': (network.id | string ~ '00') | int,
+            'interface': 'port'~(network.id+1),
+            'lease_time': 86400,
+            'default_gateway': network.ipv4,
+            'netmask': network.mask,
+            'start_ip': network.ipv4_range.split('-')[0],
+            'end_ip': network.ipv4_range.split('-')[1],
+            'dns_service': item.ipv4,
+            'dns_server1': item.secondary_dns,
+          }
+        ]
+      }}
+  when:
+    - network.dhcp_server | default(false) | bool
+    - network.ipv4_range is defined
+
+- name: Build DHCP server list
+  ansible.builtin.set_fact:
+    dhcp_servers: >-
+      {{
+        dhcp_servers | default([]) + [
+          {
+            'id': (network.id | string ~ item.tag | string) | int,
+            'interface': 'port'~(network.id+1),
+            'lease_time': 86400,
+            'default_gateway': item.ipv4,
+            'netmask': item.mask,
+            'start_ip': item.ipv4_range.split('-')[0],
+            'end_ip': item.ipv4_range.split('-')[1],
+            'dns_service': item.ipv4,
+            'dns_server1': item.secondary_dns if item.secondary_dns is defined else '',
+          }
+        ]
+      }}
+  loop: "{{ network.vlans | selectattr('dhcp_server', 'equalto', true) | list }}"
+
+- name: Configure DHCP server on VLAN
+  fortios_system_dhcp_server:
+    vdom: "root"
+    state: "present"
+    access_token: "{{ admin_api_token }}"
+    system_dhcp_server:
+      id: "{{ item.id }}"
+      status: "enable"
+      interface: "{{ item.interface }}"
+      lease_time: "{{ item.lease_time }}"
+      default_gateway: "{{ item.default_gateway }}"
+      netmask: "{{ item.netmask }}"
+      ip_range:
+        - id: 1
+          start_ip: "{{ item.start_ip }}"
+          end_ip: "{{ item.end_ip }}"
+      dns_service: "{{ item.dns_service }}"
+      dns_server1: "{{ item.dns_server1 }}"
+  loop: "{{ dhcp_servers | default([]) }}"

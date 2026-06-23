@@ -1,0 +1,93 @@
+- name: Create cloud-init debian template to proxmox
+  hosts: proxmox
+  vars_files:
+    - "{{ playbook_dir }}/vars/configuration.yml"
+  vars:
+      cloud_init_file_dest: "/var/lib/vz/template/iso/"
+  tasks:
+    - name: Vérifier si la VM {{ template_vmid }} existe déjà
+      community.general.proxmox_kvm:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_token_id: "{{ proxmox_token_id }}"
+        api_token_secret: "{{ proxmox_token_secret }}"
+        node: "{{ proxmox_node }}"
+        vmid: "{{ template_vmid }}"
+        state: current
+      register: vm_info
+      ignore_errors: true
+
+    - name: Arrêt du playbook si le template existe déjà
+      ansible.builtin.meta: end_play
+      when:
+        - vm_info is not failed
+        - vm_info.msg is defined and 'running' in vm_info.msg
+          or vm_info.status is defined
+
+    - name: Vérifier si l'image est déjà présente sur le nœud
+      ansible.builtin.stat:
+        path: "{{ cloud_init_file_dest }}/{{ cloud_init_file }}"
+      register: image_stat
+
+    - name: Copy Debian cloud-init file
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/files/{{ cloud_init_file }}"
+        dest: "{{ cloud_init_file_dest }}/{{ cloud_init_file }}"
+        mode: "0644"
+      when: not image_stat.stat.exists
+
+    - name: Créer la VM {{ name }}-template (vmid {{ template_vmid }})
+      community.general.proxmox_kvm:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_token_id: "{{ proxmox_token_id }}"
+        api_token_secret: "{{ proxmox_token_secret }}"
+        node: "{{ proxmox_node }}"
+        vmid: "{{ template_vmid }}"
+        name: "{{ name }}-template"
+        memory: 2000
+        cores: 1
+        ide:
+          ide2: "{{ cloud_init_template_storage }}:cloudinit"
+        boot: "order=scsi0"
+        serial:
+          serial0: "socket"
+        vga: "serial0"
+        agent: "enabled=1"
+        ipconfig:
+          ipconfig0: "ip=dhcp"
+        ciuser: "debian"
+        cipassword: "changeme"
+        state: present
+
+    - name: Importer le disque qcow2 dans la VM
+      ansible.builtin.command:
+        cmd: >
+          qm importdisk {{ template_vmid }}
+          {{ cloud_init_file_dest }}/{{ cloud_init_file }}
+          {{ cloud_init_template_storage }}
+          --format qcow2
+      register: import_result
+      changed_when: import_result.rc == 0
+
+    - name: Attacher le disque importé à la VM
+      ansible.builtin.command:
+        cmd: >
+          qm set {{ template_vmid }}
+          --scsi0 {{ cloud_init_template_storage }}:vm-{{ template_vmid }}-disk-0,discard=on
+      changed_when: true
+
+    - name: Convertir la VM en template
+      community.general.proxmox_kvm:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_token_id: "{{ proxmox_token_id }}"
+        api_token_secret: "{{ proxmox_token_secret }}"
+        node: "{{ proxmox_node }}"
+        vmid: "{{ template_vmid }}"
+        state: template
+      register: template_result
+
+    - name: Confirmation
+      ansible.builtin.debug:
+        msg: "✅ Template '{{ name }}-template' (vmid: {{ template_vmid }}) créé avec succès sur {{ proxmox_node }}"

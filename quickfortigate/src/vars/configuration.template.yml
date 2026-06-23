@@ -1,0 +1,121 @@
+# ─────────────────────────────────────────────
+# VM configuration
+# ─────────────────────────────────────────────
+vmid: 500
+name: "fortilab-core"
+disk_file: "fortigate-v4.6.6.qcow2"
+vm_storage: "local-zfs"
+
+cores: 4
+ram: 4096
+tags:                  # proxmox tags
+  - "fortilab"
+
+log_disk:
+  size: 8              # disk size
+  storage: "local-zfs" # Storage location (e.g., local-lvm)
+
+# ─────────────────────────────────────────────
+# Script setup
+# ─────────────────────────────────────────────
+
+create_network_on_proxmox: true
+
+# ─────────────────────────────────────────────
+# FortiGate Configuration
+# ─────────────────────────────────────────────
+
+admin_https_port: 8006 # change administrative access port to avoid conflics
+
+roles:
+  - "interfaces-auto-setup"
+  - "secure-web-gateway"
+  - "ipsec-remote-access"
+
+networks:
+  - id: 0
+    bridge: "vmbr0"
+    macaddr: "02:00:00:8b:21:ea"
+    name: "wan"
+    role: "wan"
+    ipv4: xxx.xxx.xxx.xxx
+    mask: 255.255.255.0
+    gateway: "xxx.xxx.xxx.254"
+    allow_access:
+      - "http"
+      - "https"
+      - "ssh"
+    vlans: []
+  - id: 1
+    bridge: "lan"
+    name: "lan"
+    role: "lan"
+    macaddr: ""
+    ipv4: 10.1.0.1
+    mask: 255.255.0.0
+    net_cidr: 10.1.0.0/24
+    allow_access:
+      - "ping"
+    vlans:
+      - tag: "10"
+        name: "lan-web"
+        role: "lan"
+        ipv4: 10.1.1.1
+        mask: 255.255.255.0
+        net_cidr: 10.1.1.0/24
+        dhcp_server: true
+        secondary_dns: "1.1.1.1" # optional
+        ipv4_range: "10.1.1.100-10.1.1.150"
+        allow_access:
+          - "http"
+          - "https"
+          - "ssh"
+          - "ping"
+  - id: 2
+    bridge: "dmz"
+    name: "dmz"
+    role: "dmz"
+    macaddr: ""
+    ipv4: 10.0.0.1
+    mask: 255.255.0.0
+    net_cidr: 10.0.0.0/24
+    allow_access:
+      - "ping"
+    vlans:
+      - tag: "10"
+        name: "dmz-in"
+        role: "dmz"
+        ipv4: 10.0.1.1
+        mask: 255.255.255.0
+        net_cidr: 10.0.1.0/24
+        allow_access:
+          - "ping"
+      - tag: "20"
+        name: "dmz-out"
+        role: "dmz"
+        ipv4: 10.0.2.1
+        mask: 255.255.255.0
+        net_cidr: 10.0.2.0/24
+        allow_access:
+          - "ping"
+
+# ─────────────────────────────────────────────
+# FortiGate secrets
+# ─────────────────────────────────────────────
+
+ftg_api_address: xxx.xxx.xxx.xxx
+admin_password: "Mot-de-pass"
+admin_trusted_hosts:
+  - "xxx.xxx.xxx.xxx 255.255.255.255"
+admin_api_token: "token-arbitraire"
+ftg_licence: "licence-forti-flex"
+
+# ─────────────────────────────────────────────
+# Proxmox secrets
+# ─────────────────────────────────────────────
+
+proxmox_host: "proxmox.example.com"
+proxmox_user: "root@pam"
+proxmox_token_id: "iac"
+proxmox_token_secret: "token-généré-par-proxmox"
+proxmox_node: "proxmox"

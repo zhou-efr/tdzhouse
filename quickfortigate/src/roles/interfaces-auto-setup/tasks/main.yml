@@ -11,7 +11,17 @@
       role: "{{ item.role }}"
       allowaccess: "{{ item.allow_access }}"
   loop: "{{ networks }}"
-  throttle: 1
+
+- name: Setup Interface aliases
+  fortinet.fortios.fortios_firewall_address:
+    vdom: "root"
+    state: "present"
+    access_token: "{{ admin_api_token }}"
+    firewall_address:
+      name: "{{ item.name }}-addrs"
+      type: "ipmask"
+      subnet: "{{ item.net_cidr }}"
+  loop: "{{ networks | selectattr('net_cidr', 'defined') }}"
 
 - name: Configure VLAN interfaces
   fortinet.fortios.fortios_system_interface:
@@ -29,4 +39,21 @@
       allowaccess: "{{ item.1.allow_access }}"
   loop: "{{ networks | subelements('vlans', skip_missing=True) }}"
   when: item.1 is defined
-  throttle: 1
+
+- name: Setup VLAN aliases
+  fortinet.fortios.fortios_firewall_address:
+    vdom: "root"
+    state: "present"
+    access_token: "{{ admin_api_token }}"
+    firewall_address:
+      name: "{{ item.1.name }}-addrs"
+      type: "ipmask"
+      subnet: "{{ item.1.net_cidr }}"
+  loop: "{{ networks | subelements('vlans', skip_missing=True) }}"
+  when: item.1 is defined
+
+- name: Include network configuration tasks
+  include_tasks: dhcp_server.yml
+  loop: "{{ networks }}"
+  loop_control:
+    loop_var: network

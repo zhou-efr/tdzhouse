@@ -25,6 +25,9 @@
     ansible_httpapi_use_ssl: true
     ansible_httpapi_validate_certs: false
     ansible_httpapi_port: 8006
-  roles:
-    - "interfaces-auto-setup"
+  tasks:
+    - name: include server roles
+      ansible.builtin.include_role:
+        name: "{{ item }}"
+      loop: "{{ roles }}"
 

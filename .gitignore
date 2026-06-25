@@ -28,3 +28,5 @@ fortios.qcow2
 /proxmoxquickdebian/vars/inventory.yml
 /proxmoxquickdebian/vars/secret.pass
 /proxmoxquickdebian/.terraform/
+/proxmoxquickdebian/files/Fortinet_CA_SSL.cer
+/proxmoxquickdebian/files/debian-13-genericcloud-amd64.qcow2

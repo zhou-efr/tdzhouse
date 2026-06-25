@@ -11,8 +11,9 @@
             'netmask': network.mask,
             'start_ip': network.ipv4_range.split('-')[0],
             'end_ip': network.ipv4_range.split('-')[1],
-            'dns_service': item.ipv4,
-            'dns_server1': item.secondary_dns,
+            'dns_service': "specify",
+            'dns_server1': network.ipv4,
+            'dns_server2': network.secondary_dns if network.secondary_dns is defined else '',
           }
         ]
       }}
@@ -27,24 +28,25 @@
         dhcp_servers | default([]) + [
           {
             'id': (network.id | string ~ item.tag | string) | int,
-            'interface': 'port'~(network.id+1),
+            'interface': item.name,
             'lease_time': 86400,
             'default_gateway': item.ipv4,
             'netmask': item.mask,
             'start_ip': item.ipv4_range.split('-')[0],
             'end_ip': item.ipv4_range.split('-')[1],
-            'dns_service': item.ipv4,
-            'dns_server1': item.secondary_dns if item.secondary_dns is defined else '',
+            'dns_service': "specify",
+            'dns_server1': item.ipv4,
+            'dns_server2': item.secondary_dns if item.secondary_dns is defined else '',
           }
         ]
       }}
-  loop: "{{ network.vlans | selectattr('dhcp_server', 'equalto', true) | list }}"
+  loop: "{{ network.vlans | selectattr('dhcp_server', 'defined') | selectattr('dhcp_server', 'equalto', true) | list }}"
 
 - name: Configure DHCP server on VLAN
   fortios_system_dhcp_server:
-    vdom: "root"
     state: "present"
     access_token: "{{ admin_api_token }}"
+    vdom: "root"
     system_dhcp_server:
       id: "{{ item.id }}"
       status: "enable"
@@ -58,4 +60,5 @@
           end_ip: "{{ item.end_ip }}"
       dns_service: "{{ item.dns_service }}"
       dns_server1: "{{ item.dns_server1 }}"
+      dns_server2: "{{ item.dns_server2 }}"
   loop: "{{ dhcp_servers | default([]) }}"

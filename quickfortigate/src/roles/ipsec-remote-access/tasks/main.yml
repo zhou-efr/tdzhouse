@@ -1,0 +1,145 @@
+- name: Create internal ip list for split tunneling
+  ansible.builtin.set_fact:
+    internals_addrs: >- 
+      {{ internals_addrs | default([]) + [{
+        "name" : item ~ "-addrs" 
+      }] }}
+  loop: "{{ vpn_vars.access_to }}"
+
+- name: Create internal ip group for split tunneling
+  fortinet.fortios.fortios_firewall_addrgrp:
+    vdom: "root"
+    state: "present"
+    access_token: "{{ admin_api_token }}"
+    firewall_addrgrp:
+      name: "internals-addrs"
+      member: "{{ internals_addrs }}"
+
+# -------------------------------------------------------
+# 1. Pool d'adresses IP attribuées aux clients (mode-config)
+# -------------------------------------------------------
+- name: Créer le pool d'IP pour les clients IPsec
+  fortios_firewall_address:
+    vdom: "{{ vpn_vars.vdom }}"
+    access_token: "{{ admin_api_token }}"
+    state: present
+    firewall_address:
+      name: "{{ vpn_vars.vpn_pool_name }}"
+      type: iprange
+      start_ip: "{{ vpn_vars.vpn_pool_start }}"
+      end_ip: "{{ vpn_vars.vpn_pool_end }}"
+
+# -------------------------------------------------------
+# 2. Phase 1 — IKEv2, PSK, FQDN IDs, mode-config ON
+# -------------------------------------------------------
+- name: Configurer Phase 1 IKEv2
+  fortios_vpn_ipsec_phase1_interface:
+    vdom: "{{ vpn_vars.vdom }}"
+    access_token: "{{ admin_api_token }}"
+    state: present
+    vpn_ipsec_phase1_interface:
+      name: "{{ vpn_vars.phase1_name }}"
+      type: dynamic           # remote-access / roadwarrior
+      interface: port1
+      ike_version: "2"
+      authmethod: psk
+      psksecret: "{{ vpn_vars.psk_secret }}"
+
+      # IDs FQDN pour matcher la config strongSwan
+      localid: "{{ vpn_vars.fg_fqdn }}"
+      localid_type: fqdn
+      #      peerid: "{{ client_fqdn }}"
+      peertype: any           # un seul peer identifié par FQDN : one
+      # Si tu veux accepter n'importe quel peer avec le bon PSK :
+      # peertype: any
+
+      # Mode-config : le FG attribue une IP au client (vips = 0.0.0.0)
+      mode_cfg: enable
+      ipv4_start_ip: "{{ vpn_vars.vpn_pool_start }}"
+      ipv4_end_ip: "{{ vpn_vars.vpn_pool_end }}"
+      ipv4_netmask: "{{ vpn_vars.vpn_pool_mask }}"
+
+      # Split DNS optionnel
+      # ipv4_dns_server1: "10.0.1.1"
+
+      # Proposals IKE — compatibles strongSwan défauts
+      proposal: "aes256-sha512"
+      dhgrp: "21"
+      keylife: 86400
+
+      dpd: on-idle
+      dpd_retrycount: 3
+      dpd_retryinterval: 20
+
+      nattraversal: enable
+      transport: "udp"
+      ipv4_split_include: "internals-addrs"
+
+# -------------------------------------------------------
+# 3. Phase 2 — subnets = remote_ts du côté strongSwan
+# -------------------------------------------------------
+- name: Configurer Phase 2
+  fortios_vpn_ipsec_phase2_interface:
+    vdom: "{{ vpn_vars.vdom }}"
+    access_token: "{{ admin_api_token }}"
+    state: present
+    vpn_ipsec_phase2_interface:
+      name: "{{ vpn_vars.phase2_name }}"
+      phase1name: "{{ vpn_vars.phase1_name }}"
+      proposal: "aes256-sha512"
+      pfs: enable
+      dhgrp: "21"
+      keylife_type: seconds
+      keylifeseconds: 3600
+      # Côté FortiGate (local) = les subnets LAN
+#      src_addr_type: subnet
+#      src_start_ip: "0.0.0.0"
+#      src_end_ip: "0.0.0.0"
+      src_addr_type: name
+      src_name: "internals-addrs"
+      # Côté client (remote) = l'IP assignée dynamiquement
+#      dst_addr_type: subnet
+#      dst_start_ip: "0.0.0.0"
+#      dst_end_ip: "0.0.0.0"
+      dst_addr_type: name
+      dst_name: "all"
+
+# -------------------------------------------------------
+# 5. Politique firewall : clients VPN → LANs
+# -------------------------------------------------------
+- name: Setup aliases
+  fortinet.fortios.fortios_firewall_address:
+    vdom: "root"
+    state: "present"
+    access_token: "{{ admin_api_token }}"
+    firewall_address:
+      name: "{{ vpn_vars.phase1_name }}-addrs"
+      type: "ipmask"
+      subnet: "{{ vpn_vars.vpn_pool_start }} {{ vpn_vars.vpn_pool_mask }}"
+
+- name: Politique firewall VPN → LAN
+  fortios_firewall_policy:
+    vdom: "{{ vpn_vars.vdom }}"
+    access_token: "{{ admin_api_token }}"
+    state: present
+    firewall_policy:
+      policyid: "20{{ index }}"
+      name: "VPN-to-{{ item }}"
+      srcintf:
+        - name: "{{ vpn_vars.phase1_name }}"
+      dstintf:
+        - name: "{{ item }}"
+      srcaddr:
+        - name: "{{ vpn_vars.phase1_name }}-addrs"
+      dstaddr:
+        - name: "{{ item }}-addrs"
+      action: accept
+      schedule: always
+      service:
+        - name: ALL
+      logtraffic: all
+      nat: disable
+  loop: "{{ vpn_vars.access_to }}"
+  loop_control:
+    index_var: index
+

@@ -1,0 +1,108 @@
+- name: Update all packages to their latest version
+  ansible.builtin.apt:
+    name: "*"
+    state: latest
+    update_cache: yes
+
+- name: Install sudo
+  ansible.builtin.apt:
+    name: sudo
+    state: present
+
+- name: Add the user zhou to sudo
+  ansible.builtin.user:
+    name: "{{ target_user }}"
+    create_home: true
+    group: sudo
+    shell: /bin/bash
+
+- name: Copy file with owner and permissions
+  ansible.builtin.copy:
+    src: /root/.ssh
+    dest: "/home/{{ target_user }}/.ssh"
+    owner: "{{ target_user }}"
+    remote_src: yes
+
+- name: Copy file with owner and permissions
+  ansible.builtin.copy:
+    src: /root/.ssh/authorized_keys
+    dest: "/home/{{ target_user }}/.ssh/authorized_keys"
+    owner: "{{ target_user }}"
+    remote_src: yes
+
+- name: Install required packages
+  ansible.builtin.apt:
+    name:
+      - git
+      - zsh
+      - curl
+      - sudo
+    state: present
+
+- name: Vérifier si Oh My Zsh est déjà installé pour {{ target_user }}
+  stat:
+    path: "/home/{{ target_user }}/.oh-my-zsh"
+  register: omz_installed
+
+- name: Télécharger le script d'installation Oh My Zsh
+  get_url:
+    url: https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh
+    dest: /tmp/install.sh
+    mode: '0755'
+  when: not omz_installed.stat.exists
+
+- name: Set git global http.proxy
+  community.general.git_config:
+    name: http.proxy
+    scope: global
+    value: "{{ proxy_url }}"
+  when: is_proxy_server is not defined
+  become: true
+  become_user: "{{ target_user }}"
+
+- name: Exécuter le script d'installation Oh My Zsh
+  command: /bin/sh /tmp/install.sh --unattended
+  become: true
+  become_user: "{{ target_user }}"
+  args:
+    chdir: "~"
+  environment:
+    RUNZSH: "no"
+    CHSH: "no"
+  when: not omz_installed.stat.exists
+
+- name: Remove existing .zshrc
+  ansible.builtin.file:
+    path: "{{ target_home }}/.zshrc"
+    state: absent
+
+- name: Download custom .zshrc
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/zhou-efr/PimpMyParrot/refs/heads/main/.zshrc
+    dest: "{{ target_home }}/.zshrc"
+    owner: "{{ target_user }}"
+
+- name: Install zsh-autosuggestions plugin
+  ansible.builtin.git:
+    repo: https://github.com/zsh-users/zsh-autosuggestions.git
+    dest: "{{ zsh_custom }}/plugins/zsh-autosuggestions"
+    version: master
+  become: true
+  become_user: "{{ target_user }}"
+
+- name: Create GTK config directory
+  ansible.builtin.file:
+    path: "{{ target_home }}/.config/gtk-3.0"
+    state: directory
+    owner: "{{ target_user }}"
+
+- name: Download gtk.css
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/zhou-efr/PimpMyParrot/main/gtk.css
+    dest: "{{ target_home }}/.config/gtk-3.0/gtk.css"
+    owner: "{{ target_user }}"
+
+- name: Set default shell to zsh
+  ansible.builtin.user:
+    name: "{{ target_user }}"
+    shell: /usr/bin/zsh

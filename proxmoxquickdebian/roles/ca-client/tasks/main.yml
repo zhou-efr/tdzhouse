@@ -1,0 +1,9 @@
+- name: Copy Debian cloud-init file
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/files/{{ cacert }}"
+    dest: "/usr/local/share/ca-certificates/{{ cacert }}"
+    remote_src: yes
+
+- name: Update CA Certificates
+  become: true
+  command: update-ca-certificates

@@ -5,7 +5,7 @@ services:
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - portainer_data:/data
+      - /mnt/mgmt/portainer:/data
     ports:
       - 9443:9443
       - 8000:8000  # Remove if you do not intend to use Edge Agents
@@ -16,4 +16,4 @@ volumes:
 
 networks:
   default:
-    name: portainer_net
+    name: portainer-net

@@ -64,18 +64,18 @@ services:
 
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "/mnt/traefik/letsencrypt:/letsencrypt"
-      - "/mnt/traefik/dynamic:/etc/traefik/dynamic:ro"
+      - "/mnt/mgmt/traefik/letsencrypt:/letsencrypt"
+      - "/mnt/mgmt/traefik/dynamic:/etc/traefik/dynamic:ro"
 
     networks:
       - traefik-net
       - glossaire-net
-      - portainer_net
+      - portainer-net
 
 networks:
   traefik-net:
     external: false
   gloassaire-net:
     external: true
-  portainer_net:
+  portainer-net:
     external: true

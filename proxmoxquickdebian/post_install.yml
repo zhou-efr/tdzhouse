@@ -12,15 +12,16 @@
         node: "{{ proxmox_node }}"
         vmid: "{{ vmid }}"
         state: started
+    - name: Sleep for 3 minutes to wait ftg to be up
+      ansible.builtin.wait_for:
+        timeout: 180
 
-
-- name: setup docker
+- name: setup roles
   hosts: target
   vars_files:
     - "{{ playbook_dir }}/vars/configuration.yml"
-  roles:
-    - ca-client
-    - debian
-    - docker-server
-    - traefik
-    - bookstack
+  tasks:
+    - name: include server roles
+      ansible.builtin.include_role:
+        name: "{{ item }}"
+      loop: "{{ roles }}"

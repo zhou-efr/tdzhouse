@@ -50,9 +50,6 @@
         ide:
           ide2: "{{ cloud_init_template_storage }}:cloudinit"
         boot: "order=scsi0"
-        serial:
-          serial0: "socket"
-        vga: "serial0"
         agent: "enabled=1"
         ipconfig:
           ipconfig0: "ip=dhcp"
@@ -91,3 +88,14 @@
     - name: Confirmation
       ansible.builtin.debug:
         msg: "✅ Template '{{ name }}-template' (vmid: {{ template_vmid }}) créé avec succès sur {{ proxmox_node }}"
+
+- name: Create post-install inventory
+  hosts: localhost
+  vars_files:
+    - "{{ playbook_dir }}/vars/configuration.yml"
+  tasks:
+    - name: Create post-install inventory using template
+      template:
+        src: "{{ playbook_dir }}/files/inventory.yml.j2"
+        dest: "{{ playbook_dir }}/vars/temp_inventory.yml"
+        force: yes

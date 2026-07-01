@@ -24,7 +24,7 @@ terraform apply
 # Post installation setup
 # ─────────────────────────────────────────────
 
-
+ansible-playbook --vault-password-file ./vars/secret.pass -i ./vars/temp_inventory.yml ./post_install.yml
 
 # ─────────────────────────────────────────────
 # Cleaning

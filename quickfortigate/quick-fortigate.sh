@@ -1,3 +1,5 @@
+
+
 # ─────────────────────────────────────────────
 # Setup secrets and configuration
 # ─────────────────────────────────────────────
@@ -17,3 +19,4 @@ OBJC_DISABLE_INITIALIZE_FORK_SAFETY=yes ansible-playbook --vault-password-file .
 # Cleaning
 # ─────────────────────────────────────────────
 ansible-vault decrypt --vault-password-file ./src/vars/secret.pass ./src/vars/configuration.yml
+

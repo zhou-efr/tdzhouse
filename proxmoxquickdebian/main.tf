@@ -81,7 +81,7 @@ resource "proxmox_virtual_environment_vm" "instance" {
       )
       model       = "virtio"
       firewall    = true
-      mac_address = network_device.value.macaddr
+      # mac_address = network_device.value.macaddr
     }
   }
 
@@ -93,6 +93,13 @@ resource "proxmox_virtual_environment_vm" "instance" {
       username = "root"
       password = local.decoded_vault_yaml.root_password
       keys     = local.decoded_vault_yaml.authorized_keys
+    }
+
+    dynamic "dns" {
+      for_each = local.decoded_vault_yaml.networks
+      content {
+        servers = [try(dns.value.dns, null)]
+      }
     }
 
     dynamic "ip_config" {

@@ -1,0 +1,28 @@
+# Traefik configuration pour le portainer
+
+http:
+  routers:
+    glossaire:
+      rule: "Host(`portainer.fortilab.tdz.ovh`)"
+      entryPoints:
+        - websecure
+      service: portainer-backend
+      middlewares:
+        - portainer-headers
+      tls:
+        certResolver: letsencrypt
+
+  middlewares:
+    portainer-headers:
+      headers:
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+        hostsProxyHeaders:
+          - "X-Forwarded-Host"
+
+  services:
+    portainer-backend:
+      loadBalancer:
+        servers:
+          - url: "https://portainer:9443"
+        passHostHeader: true
